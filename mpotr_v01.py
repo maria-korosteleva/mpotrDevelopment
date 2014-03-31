@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 def receivedMessage(account, sender, message, conversation, flags):
-    print sender, "said:", message
+    print conversation,", ",  sender, "said:", message
 
 # Import libraries
 import dbus, gobject
@@ -27,9 +27,31 @@ for acc in purple.PurpleAccountsGetAllActive():
 account_name = "korosteleva2@gmail.com/"
 account = purple.PurpleAccountsFind(account_name, "prpl-jabber")
 
-# example 
-for conv in purple.PurpleGetIms():
-    purple.PurpleConvImSend(purple.PurpleConvIm(conv), "Ignore.")
+# Create new chat with user's defined name
+conv_name = raw_input("Choose the desired conversation name: ")
+conv = purple.PurpleConversationNew(2, account, conv_name + "@conference.qip.ru")
+purple.PurpleConversationSetName(conv, conv_name) 	
+chat = purple.PurpleConversationGetChatData(conv)
+
+# Add new user to chat
+#nickname = raw_input("Choose your desired nickname: ")
+nickname = "korosteleva"
+purple.PurpleConversationSetAccount(conv, account) 
+purple.PurpleConvChatAddUser(chat, account_name, "New user in chat", 4, 1)	
+purple.PurpleConvChatSetNick(chat, nickname)
+
+# Set chat topic Do we need this?
+#topic = raw_input("Set the chat topic: ")
+topic = "topic"
+purple.PurpleConvChatSetTopic(chat, nickname, topic)
+
+# example of writing to chat
+#message = raw_input("Write something: ")
+message = "Hi!"
+purple.PurpleConvChatWrite(chat, nickname, message, 0, 0)
+
+for convers in purple.PurpleGetChats():
+    purple.PurpleConvChatSend(purple.PurpleConvChat(convers), "Ignore.")
 
 # main loop
 loop = gobject.MainLoop()
