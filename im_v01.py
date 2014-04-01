@@ -10,7 +10,7 @@ dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 bus = dbus.SessionBus()
 
 # Add receivedMessage signal handler
-bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.PurpleInterface", signal_name="ReceivedChatMsg")
+bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.PurpleInterface", signal_name="ReceivedImMsg")
 
 # set purple object
 obj = bus.get_object("im.pidgin.purple.PurpleService", "/im/pidgin/purple/PurpleObject")
@@ -27,28 +27,14 @@ account_name = "korosteleva2@gmail.com/"
 account = purple.PurpleAccountsFind(account_name, "prpl-jabber")
 
 # Create new chat with user's defined name
-conv_name = raw_input("Choose your buddy name: ")
-conv = purple.PurpleConversationNew(1, account, conv_name + "@conference.qip.ru")
-#purple.PurpleConversationSetName(conv, conv_name) 	
-#chat = purple.PurpleConversationGetChatData(conv)
-#chat = purple.PurpleConvChat(conv)
-
-# Add new user to chat
-#nickname = raw_input("Choose your desired nickname: ")
-#nickname = "korosteleva"
-#purple.PurpleConversationSetAccount(conv, account) 
-#purple.PurpleConvChatAddUser(chat, account_name, "New user in chat", 4, 1)	
-#purple.PurpleConvChatSetNick(chat, nickname)
-
-# Set chat topic Do we need this?
-#topic = raw_input("Set the chat topic: ")
-#topic = "topic"
-#purple.PurpleConvChatSetTopic(chat, nickname, topic)
+#conv_name = raw_input("Choose your buddy name: ")
+conv_name = "mkorostel"
+conv = purple.PurpleConversationNew(1, account, conv_name + "@qip.ru")
 
 # example of writing to chat
-#message = raw_input("Write something: ")
+message = raw_input("Write something: ")
 #message = "Hi!"
-#purple.PurpleConvChatWrite(chat, nickname, message, 0, 0)
+purple.PurpleConvImSend(purple.PurpleConvIm(conv), message)
 
 for convers in purple.PurpleGetIms():
     purple.PurpleConvImSend(purple.PurpleConvIm(convers), "Ignore.")
