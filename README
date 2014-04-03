@@ -1,1 +1,8 @@
 This is mpOTR development README by MSU researches
+
+To run this you need:
+pidgin
+libotr-4.0.0
+pidgin-otr-4.0.0.0
+dbus-1.8.0
+dbus-python-1.2.0
