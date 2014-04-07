@@ -27,9 +27,11 @@ def receivedMessage(account, sender, message, conversation, flags):
 # Generate and send nonce to chat
 #
 def sendNonce(chat):
+    global crypto
     print "sending..."
-    nonce = "nonce"
-    purple.PurpleConvChatSend(chat, nonce)
+    crypto.getSomeNonce.restype = c_char_p #return type
+    nonce = crypto.getSomeNonce(13)
+    purple.PurpleConvChatSend(chat, "mpOTR:SID:"+nonce)
 
 #
 # process reciever nonce
@@ -43,10 +45,13 @@ def processNonce(nonce):
 ####################### Main program #############################
 
 # Import libraries
-import dbus, gobject
+import dbus, gobject, ctypes
+from ctypes import *
 from dbus.mainloop.glib import DBusGMainLoop
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 bus = dbus.SessionBus()
+crypto = ctypes.CDLL('/root/mpotrDevelopment/c_func_mpotr.so')
+crypto.initLibgcrypt()
 
 # Add receivedMessage signal handler
 bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.PurpleInterface", signal_name="ReceivedChatMsg")
