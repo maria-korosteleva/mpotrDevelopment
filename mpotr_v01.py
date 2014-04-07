@@ -17,38 +17,30 @@ obj = bus.get_object("im.pidgin.purple.PurpleService", "/im/pidgin/purple/Purple
 purple = dbus.Interface(obj, "im.pidgin.purple.PurpleInterface")
 
 # Printing XMPP accounts
-for acc in purple.PurpleAccountsGetAllActive():
-    if purple.PurpleAccountGetProtocolId(acc) == "prpl-jabber":
-        print purple.PurpleAccountGetUsername(acc) 
+#for acc in purple.PurpleAccountsGetAllActive():
+#    if purple.PurpleAccountGetProtocolId(acc) == "prpl-jabber":
+#        print purple.PurpleAccountGetUsername(acc) 
 
 # Get account to work with
 #account_name = raw_input("Choose the account you wish to use today: ")
-account_name = "korosteleva2@gmail.com/"
+account_name = "korosteleva2@gmail.com"
 account = purple.PurpleAccountsFind(account_name, "prpl-jabber")
 
 # Create new chat with user's defined name
-conv_name = raw_input("Choose the desired conversation name: ")
-conv = purple.PurpleConversationNew(2, account, conv_name + "@conference.qip.ru")
-#purple.PurpleConversationSetName(conv, conv_name) 	
-#chat = purple.PurpleConversationGetChatData(conv)
+#conv_name = raw_input("Choose the desired conversation name: ")
+conv = purple.PurpleConversationNew(2, account, "exammple@conference.qip.ru")
 chat = purple.PurpleConvChat(conv)
 
 # Add new user to chat
 #nickname = raw_input("Choose your desired nickname: ")
 nickname = "korosteleva"
-purple.PurpleConversationSetAccount(conv, account) 
-purple.PurpleConvChatAddUser(chat, account_name, "New user in chat", 4, 1)	
-purple.PurpleConvChatSetNick(chat, nickname)
-
-# Set chat topic Do we need this?
-#topic = raw_input("Set the chat topic: ")
-topic = "topic"
-purple.PurpleConvChatSetTopic(chat, nickname, topic)
+#purple.PurpleConvChatSetNick(chat, nickname)
 
 # example of writing to chat
 #message = raw_input("Write something: ")
 message = "Hi!"
-purple.PurpleConvChatWrite(chat, nickname, message, 0, 0)
+#purple.PurpleConvChatWrite(chat, nickname, message, 0, 0)
+purple.PurpleConvChatSend(chat, message)
 
 for convers in purple.PurpleGetChats():
     purple.PurpleConvChatSend(purple.PurpleConvChat(convers), "Ignore.")
