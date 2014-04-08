@@ -58,7 +58,6 @@ unsigned char* getSomeNonce(int length)
 
 unsigned char* hash(unsigned char* str, int length)
 {
-    printf("%s : %d : %d\n", str, length, strlen(str));
     int hash_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256);
     unsigned char* digest = (unsigned char*) gcry_malloc(hash_len+1);
     digest[hash_len] = '\0';
