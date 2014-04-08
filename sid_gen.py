@@ -1,51 +1,83 @@
 #!/usr/bin/env python
 
-# "chat" and "conv_chat" -- those we are using in this turn
-
-nonce_sended = 0
-init_mess_count = 0
-
+# "chat" and "conv_chat", "sid" -- those we are using in this turn
+sid = ""
 #
 # Handle Recieved message
 #
+nonce_sended = 0
+init_mess_count = 0
 def receivedMessage(account, sender, message, conversation, flags):
     global conv_chat, chat, nonce_sended, init_mess_count
     if conversation == conv_chat:
         print sender, "said:", message
-    if message == "I'm here":
-        init_mess_count += 1
-    if 0: #### Message is nonce ###:
-        ######### proccess it #######
-        if not nonce_sended:
+        if message == "I'm here":
+            init_mess_count += 1
+        else:
+            mess_splitted = message.split(":", 2)
+            if len(mess_splitted) == 3:
+                if (mess_splitted[0] == "mpOTR") and (mess_splitted[1] == "SID"):
+                    processNonce(sender, mess_splitted[2])
+                    if not nonce_sended:
+                        sendNonce(chat)
+                        nonce_sended = 1
+        if (init_mess_count == 3) and not nonce_sended:
             sendNonce(chat)
             nonce_sended = 1
-    elif (init_mess_count == 3) and not nonce_sended:
-        sendNonce(chat)
-        nonce_sended = 1
 
 #
 # Generate and send nonce to chat
 #
 def sendNonce(chat):
     global crypto
-    print "sending..."
     crypto.getSomeNonce.restype = c_char_p #return type
-    nonce = crypto.getSomeNonce(13)
-    purple.PurpleConvChatSend(chat, "mpOTR:SID:"+nonce)
+    nonce_raw = crypto.getSomeNonce(13)
+    nonce_enc = base64.b64encode(nonce_raw)
+    purple.PurpleConvChatSend(chat, "mpOTR:SID:"+nonce_enc)
 
 #
 # process reciever nonce
 #
 nonceList = []
-def processNonce(nonce):
-    global nonceList
+usersList = []
+count_added = 0
+def processNonce(sender, nonce):
+    global nonceList, usersList, chat, count_added, sid
     print "processing..."
+    ## first use -> init
+    if nonceList == []:
+        for user in purple.PurpleConvChatGetUsers(chat):
+            nonceList.append("")
+            usersList.append(purple.PurpleConvChatCbGetName(user))
+        usersList.sort()
+    nonce_raw = base64.b64decode(nonce)
+    ## get list of buddies and find sender's number
+    i = 0
+    for i in range(0, len(usersList)):
+        if usersList[i] == sender:
+            print "found... ", i, " ", nonce
+            ## add to list using this number
+            nonceList[i] = nonce_raw
+            count_added +=1
+        i += 1
+    if count_added == len(usersList):
+        print "finishing..."
+        # finishing -- ready to get sid
+        # concate all strings
+        sid_raw = ""
+        for i in range(0, count_added):
+            sid_raw += nonceList[i]
+        print sid_raw, len(sid_raw)
+        # hash it to get SID
+        sid = crypto.hash(c_char_p(sid_raw), len(sid_raw))
+        print sid
 
 
 ####################### Main program #############################
 
 # Import libraries
 import dbus, gobject, ctypes
+import base64
 from ctypes import *
 from dbus.mainloop.glib import DBusGMainLoop
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
