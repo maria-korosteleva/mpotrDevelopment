@@ -11,6 +11,46 @@ void myprint()
     printf("hello world\n");
 }
 
+void generateKeys(char* pub_key, char* priv_key)
+{
+    gcry_sexp_t r_key, param;
+    int err = gcry_sexp_build (&param, NULL, "(genkey (rsa (nbits 4:2048)))");
+    if (err) {
+        printf("gcrypt: failed to create dsa params\n");
+    }
+    printf("Param is %s\n", param);
+    
+    err = gcry_pk_genkey (&r_key, param);
+    if (err) {
+        printf("gcrypt: failed to create dsa keypair\n");
+    }
+    printf("Key is %s\n", r_key);
+    int len = gcry_sexp_sprint(r_key, GCRYSEXP_FMT_CANON, NULL, 0);
+    char* buffer = (char*) malloc ((len+1) * sizeof(char));
+    gcry_sexp_sprint(r_key, GCRYSEXP_FMT_CANON, buffer, len+1);
+    printf("%d, key is %s\n", len, buffer);
+}
+
+
+unsigned char* getSomeNonce(int length)
+{
+    unsigned char* buffer = (unsigned char*) gcry_malloc((length+1) * sizeof(char));
+    buffer[length] = '\0';
+    gcry_randomize (buffer, length, GCRY_STRONG_RANDOM);
+    // void * gcry_random_bytes (size_t nbytes, enum gcry_random_level level);
+    return buffer;
+}
+
+
+unsigned char* hash(unsigned char* str, int length)
+{
+    int hash_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256);
+    unsigned char* digest = (unsigned char*) gcry_malloc(hash_len+1);
+    digest[hash_len] = '\0';
+    gcry_md_hash_buffer(GCRY_MD_SHA256, digest, str, length);
+    return digest;
+}
+
 
 void initLibgcrypt()
 {
@@ -46,21 +86,3 @@ void initLibgcrypt()
 }
 
 
-unsigned char* getSomeNonce(int length)
-{
-    unsigned char* buffer = (unsigned char*) gcry_malloc((length+1) * sizeof(char));
-    buffer[length] = '\0';
-    gcry_randomize (buffer, length, GCRY_STRONG_RANDOM);
-    // void * gcry_random_bytes (size_t nbytes, enum gcry_random_level level);
-    return buffer;
-}
-
-
-unsigned char* hash(unsigned char* str, int length)
-{
-    int hash_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256);
-    unsigned char* digest = (unsigned char*) gcry_malloc(hash_len+1);
-    digest[hash_len] = '\0';
-    gcry_md_hash_buffer(GCRY_MD_SHA256, digest, str, length);
-    return digest;
-}
