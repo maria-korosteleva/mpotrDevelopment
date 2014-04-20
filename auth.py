@@ -13,8 +13,9 @@ class mpOTRContext:
     usernameList = []
     nonceList = []
     r_1 = Round()
-#    nonce_sended = 0
-#    count_added = 0
+    r_2 = Round()
+    r_3 = Round()
+    r_4 = Round()
     # and so
     def __init__(self, chat):
         self.chat = chat
@@ -31,9 +32,8 @@ class mpOTRContext:
 len_sid_random = 13
 
 #
-# Handle Recieved message
+# Handle Recieved message -- big switch
 #
-
 def receivedMessage(account, sender, message, conversation, flags):
     global context
     if conversation == purple.PurpleConvChatGetConversation(context.chat):
@@ -42,16 +42,74 @@ def receivedMessage(account, sender, message, conversation, flags):
         if (len(mess_splitted) == 3) and (mess_splitted[0] == "mpOTR"):
             if mess_splitted[1] == "Init":
                 context.init_mess_count += 1
-                if (context.init_mess_count == context.members_count) and not context.r_1.sended:
-                 ######### working ######            
-                    sendNonce(context.chat)
+                if (context.init_mess_count == context.members_count) and not context.r_1.sended:         
+                    sendRound_1()
                     context.r_1.sended = 1
-            elif (mess_splitted[1] == "SID"):
-                processNonce(sender, mess_splitted[2])
+            elif (mess_splitted[1] == "A_R1"):
+                processRound_1(sender, mess_splitted[2])
                 if not context.r_1.sended:
-                   sendNonce(context.chat)
-                   context.r_1.sended = 1
+                    sendRound_1()
+                    context.r_1.sended = 1
+                if ((context.r_1.recieved == context.members_count)
+                and not context.r_2.sended): 
+                # Round finished
+                    sendRound_2()
+                    context.r_2.sended = 1
+            elif (mess_splitted[1] == "A_R2"):
+                processRound_2(sender, mess_splitted[2])
+                if not context.r_2.sended:
+                    sendRound_2()
+                    context.r_2.sended = 1
+                if ((context.r_2.recieved == context.members_count)
+                and not context.r_3.sended): 
+                # Round finished
+                    sendRound_3()
+                    context.r_3.sended = 1
+            elif (mess_splitted[1] == "A_R3"):
+                processRound_3(sender, mess_splitted[2])
+                if not context.r_3.sended:
+                    sendRound_3()
+                    context.r_3.sended = 1
+                if ((context.r_3.recieved == context.members_count)
+                and not context.r_4.sended):
+                # Round finished
+                    sendRound_4()
+                    context.r_4.sended = 1
+            elif (mess_splitted[1] == "A_R4"):
+                processRound_4(sender, mess_splitted[2])
+                if not context.r_4.sended:
+                    sendRound_4()
+                    context.r_4.sended = 1
+                if (context.r_4.recieved == context.members_count): 
+                # Round finished
+                    print "IDSKE finished"
+            elif (mess_splitted[1] == "ERR"):
+                print "mpOTR ERROR: ", mess_splitted[2]
         
+       #### Round 1 processing ####
+#
+# Generate keys and send message to chat
+#
+def sendRound_1():
+    global context, crypto
+    # generate nonce for session key
+    context.k_i = crypto.getSomeNonce(len_sid_random)
+    k_i_hashed = base64.b64encode(crypto.hash(context.k_i, len(context.k_i)))
+    # Generate Long-term keys
+    keys = ""
+    crypto.generateKeys(c_char_p(keys), c_char_p(keys))
+    # Generate ephemeral keys
+    
+    # Send message 
+    purple.PurpleConvChatSend(chat, "mpOTR:A_R1:"+k_i_hashed+";"+y_i_enc+";"+S_i_enc)
+
+#
+# Process reciever Round 1 message
+#
+def processRound_1():
+    global context, crypto
+    
+
 
 #
 # Generate and send nonce to chat
@@ -65,7 +123,6 @@ def sendNonce(chat):
 #
 # process reciever nonce
 #
-
 def processNonce(sender, nonce):
     global context
     nonce_raw = base64.b64decode(nonce)
