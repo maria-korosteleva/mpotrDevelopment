@@ -11,7 +11,18 @@ class mpOTRContext:
     # chat
     init_mess_count = 0   # initialisation -- Channel Establishment
     usernameList = []
-    nonceList = []
+    hashedNonceList = []
+    lPubKeys = []
+    ephPubKeys = []
+    sid = ""
+    expAuthNonce = []
+    xoredNonceList = []
+    bigTList = []
+#    nonceList = []
+    myKeys = ""
+    myPubKey = ""
+    myEphKeys = ""
+    myEphPubKey = ""
     r_1 = Round()
     r_2 = Round()
     r_3 = Round()
@@ -23,13 +34,19 @@ class mpOTRContext:
         print self.members_count, " members in chat are online"
         # init arrays of needed size
         for user in purple.PurpleConvChatGetUsers(chat):
-            self.nonceList.append("")
+            self.xoredNonceList.append("")
+            self.bigTList.append("")
+            self.expAuthNonce.append("")
+            self.hashedNonceList.append("")
+            self.lPubKeys.append("")
+            self.ephPubKeys.append("")
             self.usernameList.append(purple.PurpleConvChatCbGetName(user))
         self.usernameList.sort()
 
 ################################ Functions #################################
 
 len_sid_random = 13
+len_authNonce_random = 13
 
 #
 # Handle Recieved message -- big switch
@@ -82,11 +99,11 @@ def receivedMessage(account, sender, message, conversation, flags):
                     context.r_4.sended = 1
                 if (context.r_4.recieved == context.members_count): 
                 # Round finished
-                    print "IDSKE finished"
+                    print "Success! IDSKE finished!"
             elif (mess_splitted[1] == "ERR"):
                 print "mpOTR ERROR: ", mess_splitted[2]
         
-       #### Round 1 processing ####
+############### Round 1 processing ####
 #
 # Generate keys and send message to chat
 #
@@ -95,22 +112,155 @@ def sendRound_1():
     # generate nonce for session key
     context.k_i = crypto.getSomeNonce(len_sid_random)
     k_i_hashed = base64.b64encode(crypto.hash(context.k_i, len(context.k_i)))
+    
     # Generate Long-term keys
-    keys = ""
-    crypto.generateKeys(c_char_p(keys), c_char_p(keys))
-    # Generate ephemeral keys
+    context.myKeys = ""
+#    context.myKeys = crypto.generateKeys()
+    # Generate Ephemeral keys
+    context.myEphKeys = ""
+#    context.myEphKeys = crypto.generateKeys()
+
+    # Get public keys
+    context.myPubKey = ""
+#    context.myPubKey = crypto.getPubPrivKey(context.myKeys, c_char_p("public-key"))
+    context.myEphPubKey = ""
+#    context.myEphPubKey = crypto.getPubPrivKey(context.myEphKeys, c_char_p("public-key"))
+    # Send message 
+    purple.PurpleConvChatSend(chat, "mpOTR:A_R1:"+k_i_hashed+";"+ context.myPubKey +";"+context.myEphPubKey)
+
+#
+# Process recieved Round 1 message
+#
+def processRound_1(sender, message):
+    global context, crypto
+    # Split the message
+    mess_splitted = message.split(";", 2)
+    # Add to buffers
+    ## get list of buddies and find sender's number
+    for i in range(0, context.members_count):
+        if context.usernameList[i] == sender:
+            ## add to list using this number
+            context.hashedNonceList[i] = mess_splitted[0]
+            context.lPubKeys[i] = mess_splitted[1]
+            context.ephPubKeys[i] = mess_splitted[2]
+            context.r_1.recieved +=1
+
+
+############### Round 2 processing ####
+#
+# Generate sid, auth info and send message to chat
+#
+def sendRound_2():
+    global context, crypto
+    # generate SID
+    sid_raw = ""
+    for i in range(0, context.r_1.recieved):
+        sid_raw += base64.b64decode(context.hashedNonceList[i])
+    # hash it to get SID
+    context.sid = base64.b64encode(crypto.hash(c_char_p(sid_raw), len(sid_raw)))
+    print "This Session's ID is ", context.sid
+    # generate auth nonce
+    context.r_i = crypto.getSomeNonce(len_authNonce_random)
+    # get exponent of auth nonce   !!!!!
+    context.exp_r_i = base64.b64encode(crypto.hash(context.r_i, len(context.r_i)))
     
     # Send message 
-    purple.PurpleConvChatSend(chat, "mpOTR:A_R1:"+k_i_hashed+";"+y_i_enc+";"+S_i_enc)
+    purple.PurpleConvChatSend(chat, "mpOTR:A_R2:"+context.sid+";"+ context.exp_r_i)
 
 #
-# Process reciever Round 1 message
+# Process recieved Round 2 message
 #
-def processRound_1():
+def processRound_2(sender, message):
     global context, crypto
-    
+    # Split the message
+    mess_splitted = message.split(";", 1)
+    # Add to buffers
+    ## get list of buddies and find sender's number
+    for i in range(0, context.members_count):
+        if context.usernameList[i] == sender:
+            # Check if all the sid's are the same
+            if context.sid != mess_splitted[0]:
+                #print sender, " sended a wrong SessionID"
+                purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ sender +" sended a wrong SessionID")    
+            else:
+                ## Add exponent of authNonce to list
+                context.expAuthNonce[i] = mess_splitted[1]
+                context.r_2.recieved +=1
 
+############### Round 3 processing ####
+#
+# Generate t's and send message to chat
+#
+def sendRound_3():
+    global context, crypto
+    # generate t_left
+    context.my_t_left = ""
+    # generate t_right
+    context.my_t_right = ""
+    # generate big_T
+    context.myBigT = ""
+    #context.myBigT = context.my_t_left XOR context.my_t_right
+    xoredK_i = ""
+    #xoredK_i = context.k_i XOR context.my_t_right
+    # Send message 
+    purple.PurpleConvChatSend(chat, "mpOTR:A_R3:"+ xoredK_i +";"+ context.myBigT)
 
+#
+# Process recieved Round 3 message
+#
+def processRound_3(sender, message):
+    global context, crypto
+    # Split the message
+    mess_splitted = message.split(";", 1)
+    # Add to buffers
+    ## get list of buddies and find sender's number
+    for i in range(0, context.members_count):
+        if context.usernameList[i] == sender:
+            ## Add recived info to lists
+            context.xoredNonceList[i] = mess_splitted[0]
+            context.bigTList[i] = mess_splitted[1]
+            context.r_3.recieved +=1
+
+############### Round 4 processing ####
+#
+# Generate t's and send message to chat
+#
+def sendRound_4():
+    global context, crypto
+    error = 0
+    # decrypt Nonces
+    # verify nonce's hashes
+    # verify bigTs
+    if error:
+        purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ "verification error at step one")    
+    else:
+        # Compute session key
+        # Compute Session confirmation info
+        # Compute temp key -- c_i
+        # Compute auth check info -- d_i
+        context.d_i = ""
+        # sign key with myEphPrivKey
+        context.sig = ""
+        # Send message 
+        purple.PurpleConvChatSend(chat, "mpOTR:A_R4:"+ context.d_i +";"+ context.sig)
+
+#
+# Process recieved Round 4 message
+#
+def processRound_4(sender, message):
+    global context, crypto
+    # Split the message
+    mess_splitted = message.split(";", 1)
+    ## get list of buddies and find sender's number
+    for i in range(0, context.members_count):
+        if context.usernameList[i] == sender:
+            error = 0
+            # verify recieved d_i (mess_splitted[0]) with z_i
+            # verify recieved signature (mess_splitted[1]) with author's ephPubKey
+            if error:
+                purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ "verification error at authorisation step")    
+            else:
+                context.r_4.recieved +=1
 #
 # Generate and send nonce to chat
 #
@@ -127,7 +277,6 @@ def processNonce(sender, nonce):
     global context
     nonce_raw = base64.b64decode(nonce)
     ## get list of buddies and find sender's number
-    i = 0
     for i in range(0, context.members_count):
         if context.usernameList[i] == sender:
             ## add to list using this number
@@ -157,6 +306,8 @@ crypto = ctypes.CDLL('/root/mpotrDevelopment/c_func_mpotr.so')
 crypto.initLibgcrypt()
 crypto.getSomeNonce.restype = c_char_p #return type
 crypto.hash.restype = c_char_p #return type
+crypto.generateKeys.restype = c_char_p #return type
+crypto.getPubPrivKey.restype = c_char_p #return type
 
 # Add receivedMessage signal handler
 bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.PurpleInterface", signal_name="ReceivedChatMsg")

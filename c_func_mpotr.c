@@ -3,6 +3,7 @@
 
 void myprint(void);
 void initLibgcrypt();
+char* generateKeys();
 unsigned char* getSomeNonce(int length);
 unsigned char* hash(unsigned char* str, int length);
 
@@ -11,24 +12,50 @@ void myprint()
     printf("hello world\n");
 }
 
-void generateKeys(char* pub_key, char* priv_key)
+char* getPubPrivKey(char* keys, const char* type)
+{
+    gcry_sexp_t r_key;
+    // we need another function
+    int err = gcry_sexp_build (&r_key, NULL, keys);
+    if (err) {
+        printf("gcrypt: failed to convert key to s-expression\n");
+    }
+    gcry_sexp_t r_sub_key; // can conta
+    r_sub_key = gcry_sexp_find_token(r_key, type, 0);
+    if (r_sub_key == NULL){
+        printf("gcrypt: failed to find sub key\n");
+    }
+    int len = gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_CANON, NULL, 0);
+    char* sub_key = (char*) malloc ((len+1) * sizeof(char));
+    gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_CANON, sub_key, len+1);
+    
+    gcry_sexp_release(r_key);
+    gcry_sexp_release(r_sub_key);
+    
+    return sub_key;
+}
+
+char* generateKeys()
 {
     gcry_sexp_t r_key, param;
     int err = gcry_sexp_build (&param, NULL, "(genkey (rsa (nbits 4:2048)))");
     if (err) {
         printf("gcrypt: failed to create dsa params\n");
     }
-    printf("Param is %s\n", param);
-    
+    // printf("Param is %s\n", param);
     err = gcry_pk_genkey (&r_key, param);
     if (err) {
         printf("gcrypt: failed to create dsa keypair\n");
     }
-    printf("Key is %s\n", r_key);
+    // printf("Key is %s\n", r_key);
+    // To string
     int len = gcry_sexp_sprint(r_key, GCRYSEXP_FMT_CANON, NULL, 0);
     char* buffer = (char*) malloc ((len+1) * sizeof(char));
     gcry_sexp_sprint(r_key, GCRYSEXP_FMT_CANON, buffer, len+1);
-    printf("%d, key is %s\n", len, buffer);
+    // printf("%d, key is %s\n", len, buffer);
+    gcry_sexp_release(r_key);
+    gcry_sexp_release(param);
+    return buffer;
 }
 
 
