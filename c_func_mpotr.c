@@ -3,11 +3,11 @@
 
 void myprint(void);
 void initLibgcrypt();
-char* generateKeys();
+int generateKeys(char* buffer);
 unsigned char* getSomeNonce(int length);
 unsigned char* hash(unsigned char* str, int length);
 char* exponent(const char* base, const char* power);
-char* getPubPrivKey(char* keys, const char* type);
+int getPubPrivKey(char* keys, const char* type, int keysLen, char* subkey);
 
 void myprint()
 {
@@ -49,11 +49,11 @@ char* exponent(const char* base, const char* power)
     return result;
 }
 
-char* getPubPrivKey(char* keys, const char* type)
+int getPubPrivKey(char* keys, const char* type, int keysLen, char* sub_key)
 {
-    printf("%s\n", keys);
+    // printf("%s\n", keys);
     gcry_sexp_t r_key;
-    int err = gcry_sexp_new (&r_key, keys, strlen(keys), 0);
+    int err = gcry_sexp_new (&r_key, keys, keysLen, 0);
     if (err) {
         printf("gcrypt: failed to convert key to s-expression\n");
     }
@@ -63,20 +63,20 @@ char* getPubPrivKey(char* keys, const char* type)
         printf("gcrypt: failed to find sub key\n");
     }
     int len = gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_CANON, NULL, 0);
-    char* sub_key = (char*) malloc ((len+1) * sizeof(char));
-    gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_CANON, sub_key, len+1);
+    sub_key = (char*) malloc ((len) * sizeof(char));
+    gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_CANON, sub_key, len);
     sub_key[len] = '\0';
     
     gcry_sexp_release(r_key);
     gcry_sexp_release(r_sub_key);
     
-    return sub_key;
+    return len;
 }
 
-char* generateKeys()
+int generateKeys(char* buffer)
 {
     gcry_sexp_t r_key, param;
-    int err = gcry_sexp_build (&param, NULL, "(genkey (rsa (nbits 2:64)))");
+    gcry_error_t err = gcry_sexp_build (&param, NULL, "(genkey (rsa (nbits 3:256)))");
     if (err) {
         printf("gcrypt: failed to create rsa params\n");
     }
@@ -85,23 +85,28 @@ char* generateKeys()
     if (err) {
         printf("gcrypt: failed to create rsa keypair\n");
     }
-    printf("Key is %s\n", r_key);
+    // printf("Key is %s\n", r_key);
     // To string
     int len = gcry_sexp_sprint(r_key, GCRYSEXP_FMT_DEFAULT, NULL, 0);
-    char* buffer = (char*) malloc ((len+1) * sizeof(char));
-    int length = gcry_sexp_sprint(r_key, GCRYSEXP_FMT_DEFAULT, buffer, len+1);
-    printf("%d, key is %s\n,,,%d,,,", len, buffer, length);
+    // printf("Length   %d\n", len);
+    buffer = (char*) malloc ((len) * sizeof(char));
+    int length = gcry_sexp_sprint(r_key, GCRYSEXP_FMT_DEFAULT, buffer, len);
+    buffer[length] = '\0';
+    // printf("%d, key is %s\n,,,%d,,,", len, buffer, length);
     gcry_sexp_release(r_key);
     gcry_sexp_release(param);
-    
+    // printf("%d $ %d\n", strlen(buffer), len);
     gcry_sexp_t r_key_2;
-    err = gcry_sexp_new (&r_key_2, buffer, strlen(buffer), 0);
+    err = gcry_sexp_new (&r_key_2, buffer, len, 0);
     if (err) {
         printf("gcrypt: failed to convert key to s-expression\n");
+        printf ("Failure: %s/%s\n",
+                    gcry_strsource (err),
+                    gcry_strerror (err));
     }
     
-    printf("%s\n", buffer);
-    return buffer;
+    // printf("%s\n", buffer);
+    return len;
 }
 
 

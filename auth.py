@@ -13,7 +13,9 @@ class mpOTRContext:
     usernameList = []
     hashedNonceList = []
     lPubKeys = []
+    lPubKeysLen = []
     ephPubKeys = []
+    ephPubKeysLen = []
     sid = ""
     expAuthNonce = []
     xoredNonceList = []
@@ -30,6 +32,8 @@ class mpOTRContext:
     # and so
     def __init__(self, chat):
         self.chat = chat
+        user = purple.PurpleConversationGetAccount(purple.PurpleConvChatGetConversation(chat))
+        self.myUsername = purple.PurpleAccountGetUsername(user).split("@")[0]
         self.members_count = len(purple.PurpleConvChatGetUsers(chat))
         print self.members_count, " members in chat are online"
         # init arrays of needed size
@@ -39,7 +43,9 @@ class mpOTRContext:
             self.expAuthNonce.append("")
             self.hashedNonceList.append("")
             self.lPubKeys.append("")
+            self.lPubKeysLen.append(0)
             self.ephPubKeys.append("")
+            self.ephPubKeysLen.append(0)
             self.usernameList.append(purple.PurpleConvChatCbGetName(user))
         self.usernameList.sort()
 
@@ -117,20 +123,22 @@ def sendRound_1():
     
     # Generate Long-term keys
     context.myKeys = ""
-    context.myKeys = crypto.generateKeys()
-    print context.myKeys
+    context.myKeysLen = crypto.generateKeys(c_char_p(context.myKeys))
+    print "Hey Hey Key ", context.myKeys
+    print context.myKeysLen
     #print base64.b64encode(context.myKeys)
     # Generate Ephemeral keys
     context.myEphKeys = ""
-#    context.myEphKeys = crypto.generateKeys()
+#    = crypto.generateKeys(context.myEphKeys)
 
     # Get public keys
     context.myPubKey = ""
-    context.myPubKey = crypto.getPubPrivKey(context.myKeys, c_char_p("10:public-key"))
+    context.myPubKeyLen = crypto.getPubPrivKey(c_char_p(context.myKeys), c_char_p("10:public-key"), c_int(context.myKeysLen), c_char_p(context.myPubKey))
     context.myEphPubKey = ""
 #    context.myEphPubKey = crypto.getPubPrivKey(context.myEphKeys, c_char_p("public-key"))
+    context.myEphPubKeyLen = 0
     # Send message 
-    purple.PurpleConvChatSend(chat, "mpOTR:A_R1:"+k_i_hashed+";"+ context.myPubKey +";"+context.myEphPubKey)
+    purple.PurpleConvChatSend(chat, "mpOTR:A_R1:"+k_i_hashed+";"+ context.myPubKey+";"+ str(context.myPubKeyLen) +";"+context.myEphPubKey+";"+ str(context.myEphPubKeyLen))
 
 #
 # Process recieved Round 1 message
@@ -138,7 +146,7 @@ def sendRound_1():
 def processRound_1(sender, message):
     global context, crypto
     # Split the message
-    mess_splitted = message.split(";", 2)
+    mess_splitted = message.split(";", 4)
     # Add to buffers
     ## get list of buddies and find sender's number
     for i in range(0, context.members_count):
@@ -146,7 +154,9 @@ def processRound_1(sender, message):
             ## add to list using this number
             context.hashedNonceList[i] = mess_splitted[0]
             context.lPubKeys[i] = mess_splitted[1]
-            context.ephPubKeys[i] = mess_splitted[2]
+            context.lPubKeysLen[i] = int(mess_splitted[2])
+            context.ephPubKeys[i] = mess_splitted[3]
+            context.ephPubKeysLen[i] = int(mess_splitted[4])
             context.r_1.recieved +=1
 
 
@@ -195,6 +205,15 @@ def processRound_2(sender, message):
 #
 def sendRound_3():
     global context, crypto
+    # find my number
+    myNum = -1;
+    for i in range(0, context.members_count):
+        if context.usernameList[i] == context.myUsername:
+            ## Add recived info to lists
+            myNum = i
+    if myNum == -1:
+        print "Something wrong with the username"
+
     # generate t_left
     context.my_t_left = ""
     # generate t_right
@@ -308,7 +327,7 @@ crypto = ctypes.CDLL('/root/mpotrDevelopment/c_func_mpotr.so')
 crypto.initLibgcrypt()
 crypto.getSomeNonce.restype = c_char_p #return type
 crypto.hash.restype = c_char_p #return type
-crypto.generateKeys.restype = c_char_p #return type
+crypto.generateKeys.restype = c_int #return type
 crypto.getPubPrivKey.restype = c_char_p #return type
 crypto.exponent.restype = c_char_p #return type
 
