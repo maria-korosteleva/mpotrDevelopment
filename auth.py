@@ -46,7 +46,9 @@ class mpOTRContext:
 ################################ Functions #################################
 
 len_sid_random = 13
-len_authNonce_random = 13
+len_authNonce_random = 4 # May be we should make it larger, 
+                         # but then we need to do something
+                         # with module at the exponent function in crypto 
 
 #
 # Handle Recieved message -- big switch
@@ -115,14 +117,16 @@ def sendRound_1():
     
     # Generate Long-term keys
     context.myKeys = ""
-#    context.myKeys = crypto.generateKeys()
+    context.myKeys = crypto.generateKeys()
+    print context.myKeys
+    #print base64.b64encode(context.myKeys)
     # Generate Ephemeral keys
     context.myEphKeys = ""
 #    context.myEphKeys = crypto.generateKeys()
 
     # Get public keys
     context.myPubKey = ""
-#    context.myPubKey = crypto.getPubPrivKey(context.myKeys, c_char_p("public-key"))
+    context.myPubKey = crypto.getPubPrivKey(context.myKeys, c_char_p("10:public-key"))
     context.myEphPubKey = ""
 #    context.myEphPubKey = crypto.getPubPrivKey(context.myEphKeys, c_char_p("public-key"))
     # Send message 
@@ -158,12 +162,10 @@ def sendRound_2():
         sid_raw += base64.b64decode(context.hashedNonceList[i])
     # hash it to get SID
     context.sid = base64.b64encode(crypto.hash(c_char_p(sid_raw), len(sid_raw)))
-    print "This Session's ID is ", context.sid
     # generate auth nonce
     context.r_i = crypto.getSomeNonce(len_authNonce_random)
-    # get exponent of auth nonce   !!!!!
-    context.exp_r_i = base64.b64encode(crypto.hash(context.r_i, len(context.r_i)))
-    
+    # get exponent of auth nonce
+    context.exp_r_i = base64.b64encode(crypto.exponent("2", context.r_i))
     # Send message 
     purple.PurpleConvChatSend(chat, "mpOTR:A_R2:"+context.sid+";"+ context.exp_r_i)
 
@@ -308,6 +310,7 @@ crypto.getSomeNonce.restype = c_char_p #return type
 crypto.hash.restype = c_char_p #return type
 crypto.generateKeys.restype = c_char_p #return type
 crypto.getPubPrivKey.restype = c_char_p #return type
+crypto.exponent.restype = c_char_p #return type
 
 # Add receivedMessage signal handler
 bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.PurpleInterface", signal_name="ReceivedChatMsg")

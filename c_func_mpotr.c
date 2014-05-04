@@ -6,17 +6,54 @@ void initLibgcrypt();
 char* generateKeys();
 unsigned char* getSomeNonce(int length);
 unsigned char* hash(unsigned char* str, int length);
+char* exponent(const char* base, const char* power);
+char* getPubPrivKey(char* keys, const char* type);
 
 void myprint()
 {
     printf("hello world\n");
 }
 
+char* exponent(const char* base, const char* power)
+{
+    gcry_mpi_t module = gcry_mpi_set_ui(NULL, 123456789);
+    size_t nscanned = 0;
+    int err;
+    // convert numbers
+    gcry_mpi_t base_mpi = gcry_mpi_new (8);
+    if ((base[0] == '2') && (strlen(base) == 1)){
+        base_mpi = gcry_mpi_set_ui(base_mpi, 2);
+    }
+    else{ 
+        err = gcry_mpi_scan(&base_mpi, GCRYMPI_FMT_USG, base, strlen(base), &nscanned);
+        if (err) {
+            printf("gcrypt: failed to scan the base number\n");
+        }
+    }
+    gcry_mpi_t power_mpi = gcry_mpi_new (8);
+    err = gcry_mpi_scan(&power_mpi, GCRYMPI_FMT_USG, power, strlen(power), &nscanned);
+    if (err) {
+        printf("gcrypt: failed to scan the power number\n");
+    }
+    gcry_mpi_t res = gcry_mpi_new (8);
+    gcry_mpi_powm(res, base_mpi, power_mpi, module);
+    unsigned char* result;
+    size_t length = 0;
+    err = gcry_mpi_aprint (GCRYMPI_FMT_USG, &result, &length, res);
+    result = (char*) realloc (result, length+1);
+    result[length] = '\0';
+    gcry_mpi_release(power_mpi);
+    gcry_mpi_release(base_mpi);
+    gcry_mpi_release(module);
+    gcry_mpi_release(res);
+    return result;
+}
+
 char* getPubPrivKey(char* keys, const char* type)
 {
+    printf("%s\n", keys);
     gcry_sexp_t r_key;
-    // we need another function
-    int err = gcry_sexp_build (&r_key, NULL, keys);
+    int err = gcry_sexp_new (&r_key, keys, strlen(keys), 0);
     if (err) {
         printf("gcrypt: failed to convert key to s-expression\n");
     }
@@ -28,6 +65,7 @@ char* getPubPrivKey(char* keys, const char* type)
     int len = gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_CANON, NULL, 0);
     char* sub_key = (char*) malloc ((len+1) * sizeof(char));
     gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_CANON, sub_key, len+1);
+    sub_key[len] = '\0';
     
     gcry_sexp_release(r_key);
     gcry_sexp_release(r_sub_key);
@@ -38,23 +76,31 @@ char* getPubPrivKey(char* keys, const char* type)
 char* generateKeys()
 {
     gcry_sexp_t r_key, param;
-    int err = gcry_sexp_build (&param, NULL, "(genkey (rsa (nbits 4:2048)))");
+    int err = gcry_sexp_build (&param, NULL, "(genkey (rsa (nbits 2:64)))");
     if (err) {
-        printf("gcrypt: failed to create dsa params\n");
+        printf("gcrypt: failed to create rsa params\n");
     }
     // printf("Param is %s\n", param);
     err = gcry_pk_genkey (&r_key, param);
     if (err) {
-        printf("gcrypt: failed to create dsa keypair\n");
+        printf("gcrypt: failed to create rsa keypair\n");
     }
-    // printf("Key is %s\n", r_key);
+    printf("Key is %s\n", r_key);
     // To string
-    int len = gcry_sexp_sprint(r_key, GCRYSEXP_FMT_CANON, NULL, 0);
+    int len = gcry_sexp_sprint(r_key, GCRYSEXP_FMT_DEFAULT, NULL, 0);
     char* buffer = (char*) malloc ((len+1) * sizeof(char));
-    gcry_sexp_sprint(r_key, GCRYSEXP_FMT_CANON, buffer, len+1);
-    // printf("%d, key is %s\n", len, buffer);
+    int length = gcry_sexp_sprint(r_key, GCRYSEXP_FMT_DEFAULT, buffer, len+1);
+    printf("%d, key is %s\n,,,%d,,,", len, buffer, length);
     gcry_sexp_release(r_key);
     gcry_sexp_release(param);
+    
+    gcry_sexp_t r_key_2;
+    err = gcry_sexp_new (&r_key_2, buffer, strlen(buffer), 0);
+    if (err) {
+        printf("gcrypt: failed to convert key to s-expression\n");
+    }
+    
+    printf("%s\n", buffer);
     return buffer;
 }
 
