@@ -122,23 +122,16 @@ def sendRound_1():
     k_i_hashed = base64.b64encode(crypto.hash(context.k_i, len(context.k_i)))
     
     # Generate Long-term keys
-    context.myKeys = ""
-    context.myKeysLen = crypto.generateKeys(c_char_p(context.myKeys))
-    print "Hey Hey Key ", context.myKeys
-    print context.myKeysLen
-    #print base64.b64encode(context.myKeys)
+    context.myKeys = crypto.generateKeys()
+    context.myPubKey = crypto.getPubPrivKey(c_char_p(context.myKeys), c_char_p("public-key"))
+    # print "Hey Hey Key ", context.myKeys
+    
     # Generate Ephemeral keys
-    context.myEphKeys = ""
-#    = crypto.generateKeys(context.myEphKeys)
-
-    # Get public keys
-    context.myPubKey = ""
-    context.myPubKeyLen = crypto.getPubPrivKey(c_char_p(context.myKeys), c_char_p("10:public-key"), c_int(context.myKeysLen), c_char_p(context.myPubKey))
-    context.myEphPubKey = ""
-#    context.myEphPubKey = crypto.getPubPrivKey(context.myEphKeys, c_char_p("public-key"))
-    context.myEphPubKeyLen = 0
+    # context.myEphKeys = crypto.generateKeys()
+    # context.myEphPubKey = crypto.getPubPrivKey(c_char_p(context.myEphKeys), c_char_p("public-key"))
+    
     # Send message 
-    purple.PurpleConvChatSend(chat, "mpOTR:A_R1:"+k_i_hashed+";"+ context.myPubKey+";"+ str(context.myPubKeyLen) +";"+context.myEphPubKey+";"+ str(context.myEphPubKeyLen))
+    purple.PurpleConvChatSend(chat, "mpOTR:A_R1:"+k_i_hashed+";"+ context.myPubKey+";"+context.myEphPubKey)
 
 #
 # Process recieved Round 1 message
@@ -146,7 +139,7 @@ def sendRound_1():
 def processRound_1(sender, message):
     global context, crypto
     # Split the message
-    mess_splitted = message.split(";", 4)
+    mess_splitted = message.split(";", 2)
     # Add to buffers
     ## get list of buddies and find sender's number
     for i in range(0, context.members_count):
@@ -154,9 +147,9 @@ def processRound_1(sender, message):
             ## add to list using this number
             context.hashedNonceList[i] = mess_splitted[0]
             context.lPubKeys[i] = mess_splitted[1]
-            context.lPubKeysLen[i] = int(mess_splitted[2])
-            context.ephPubKeys[i] = mess_splitted[3]
-            context.ephPubKeysLen[i] = int(mess_splitted[4])
+            # context.lPubKeysLen[i] = int(mess_splitted[2])
+            context.ephPubKeys[i] = mess_splitted[2]
+            # context.ephPubKeysLen[i] = int(mess_splitted[4])
             context.r_1.recieved +=1
 
 
@@ -327,7 +320,7 @@ crypto = ctypes.CDLL('/root/mpotrDevelopment/c_func_mpotr.so')
 crypto.initLibgcrypt()
 crypto.getSomeNonce.restype = c_char_p #return type
 crypto.hash.restype = c_char_p #return type
-crypto.generateKeys.restype = c_int #return type
+crypto.generateKeys.restype = c_char_p #return type
 crypto.getPubPrivKey.restype = c_char_p #return type
 crypto.exponent.restype = c_char_p #return type
 

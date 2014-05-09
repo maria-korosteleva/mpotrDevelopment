@@ -1,20 +1,22 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include "b64.h"
 #include <gcrypt.h>
 
 void myprint(void);
 void initLibgcrypt();
-int generateKeys(char* buffer);
+unsigned char* generateKeys();
 unsigned char* getSomeNonce(int length);
 unsigned char* hash(unsigned char* str, int length);
-char* exponent(const char* base, const char* power);
-int getPubPrivKey(char* keys, const char* type, int keysLen, char* subkey);
+unsigned char* exponent(const unsigned char* base, const unsigned char* power);
+unsigned char* getPubPrivKey(char* b64_keys, const char* type);
 
 void myprint()
 {
     printf("hello world\n");
 }
 
-char* exponent(const char* base, const char* power)
+unsigned char* exponent(const unsigned char* base, const unsigned char* power)
 {
     gcry_mpi_t module = gcry_mpi_set_ui(NULL, 123456789);
     size_t nscanned = 0;
@@ -42,16 +44,19 @@ char* exponent(const char* base, const char* power)
     err = gcry_mpi_aprint (GCRYMPI_FMT_USG, &result, &length, res);
     result = (char*) realloc (result, length+1);
     result[length] = '\0';
+    
     gcry_mpi_release(power_mpi);
     gcry_mpi_release(base_mpi);
     gcry_mpi_release(module);
     gcry_mpi_release(res);
+    
     return result;
 }
 
-int getPubPrivKey(char* keys, const char* type, int keysLen, char* sub_key)
+unsigned char* getPubPrivKey(char* b64_keys, const char* type)
 {
-    // printf("%s\n", keys);
+    int keysLen = 0;
+    unsigned char* keys = unbase64(b64_keys, strlen(b64_keys), &keysLen);
     gcry_sexp_t r_key;
     int err = gcry_sexp_new (&r_key, keys, keysLen, 0);
     if (err) {
@@ -61,52 +66,54 @@ int getPubPrivKey(char* keys, const char* type, int keysLen, char* sub_key)
     r_sub_key = gcry_sexp_find_token(r_key, type, 0);
     if (r_sub_key == NULL){
         printf("gcrypt: failed to find sub key\n");
+        printf ("Failure: %s/%s\n",
+                    gcry_strsource (err),
+                    gcry_strerror (err));
     }
-    int len = gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_CANON, NULL, 0);
-    sub_key = (char*) malloc ((len) * sizeof(char));
-    gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_CANON, sub_key, len);
-    sub_key[len] = '\0';
+    int len = gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_DEFAULT, NULL, 0);
+    unsigned char* sub_key = (unsigned char*) malloc ((len) * sizeof(char));
+    int length = gcry_sexp_sprint(r_sub_key, GCRYSEXP_FMT_DEFAULT, sub_key, len);
+    sub_key[length] = '\0';
+       
+    // make it base64
+    int res_len = 0;
+    unsigned char* buffer_res = base64(sub_key, len, &res_len);
     
     gcry_sexp_release(r_key);
     gcry_sexp_release(r_sub_key);
+    free(sub_key);
     
-    return len;
+    return buffer_res;
 }
 
-int generateKeys(char* buffer)
+unsigned char* generateKeys()
 {
     gcry_sexp_t r_key, param;
     gcry_error_t err = gcry_sexp_build (&param, NULL, "(genkey (rsa (nbits 3:256)))");
     if (err) {
         printf("gcrypt: failed to create rsa params\n");
     }
-    // printf("Param is %s\n", param);
     err = gcry_pk_genkey (&r_key, param);
     if (err) {
         printf("gcrypt: failed to create rsa keypair\n");
     }
-    // printf("Key is %s\n", r_key);
+    
     // To string
     int len = gcry_sexp_sprint(r_key, GCRYSEXP_FMT_DEFAULT, NULL, 0);
-    // printf("Length   %d\n", len);
-    buffer = (char*) malloc ((len) * sizeof(char));
+    char* buffer = (char*) malloc ((len) * sizeof(char));
     int length = gcry_sexp_sprint(r_key, GCRYSEXP_FMT_DEFAULT, buffer, len);
     buffer[length] = '\0';
-    // printf("%d, key is %s\n,,,%d,,,", len, buffer, length);
+    
+    // make it base64
+    int res_len = 0;
+    unsigned char* buffer_res = base64(buffer, len, &res_len);
+    // printf("base64 result: %s\n", buffer_res);
+    
     gcry_sexp_release(r_key);
     gcry_sexp_release(param);
-    // printf("%d $ %d\n", strlen(buffer), len);
-    gcry_sexp_t r_key_2;
-    err = gcry_sexp_new (&r_key_2, buffer, len, 0);
-    if (err) {
-        printf("gcrypt: failed to convert key to s-expression\n");
-        printf ("Failure: %s/%s\n",
-                    gcry_strsource (err),
-                    gcry_strerror (err));
-    }
+    free(buffer);
     
-    // printf("%s\n", buffer);
-    return len;
+    return buffer_res;
 }
 
 
