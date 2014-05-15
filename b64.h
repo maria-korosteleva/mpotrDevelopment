@@ -1,11 +1,11 @@
 /*
-  
-  https://github.com/superwills/NibbleAndAHalf
-  base64explained.h -- Fast base64 encoding and decoding.
-  version 1.0.0, April 17, 2013 143a
-  
-  EXPLAINS how the functions in base64.h work. You don't need this file,
-  only base64.h is needed.
+
+https://github.com/superwills/NibbleAndAHalf
+base64explained.h -- Fast base64 encoding and decoding.
+version 1.0.0, April 17, 2013 143a
+
+EXPLAINS how the functions in base64.h work. You don't need this file,
+only base64.h is needed.
 
   Copyright (C) 2013 William Sherif
 
@@ -256,6 +256,7 @@ int base64integrity( const char *ascii, int len )
   if( ascii[i]!='=' && !isbase64ValidChr( ascii[i] ) )
   {
     printf( "ERROR in base64integrity at chr %d (last chr). String is NOT valid base64.\n", i ) ;
+    printf("%s, %c\n\n", ascii, ascii[i]);
     return 0 ;    
   }
   
