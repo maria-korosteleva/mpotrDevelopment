@@ -1,0 +1,72 @@
+<!-- ##### SECTION Title ##### -->
+DBus GLib low level
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### SECTION Image ##### -->
+
+
+<!-- ##### FUNCTION dbus_set_g_error ##### -->
+<para>
+
+</para>
+
+@gerror: 
+@derror: 
+
+
+<!-- ##### FUNCTION dbus_connection_setup_with_g_main ##### -->
+<para>
+
+</para>
+
+@connection: 
+@context: 
+
+
+<!-- ##### FUNCTION dbus_connection_get_g_connection ##### -->
+<para>
+
+</para>
+
+@connection: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_server_setup_with_g_main ##### -->
+<para>
+
+</para>
+
+@server: 
+@context: 
+
+
+<!-- ##### MACRO DBUS_TYPE_CONNECTION ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO DBUS_TYPE_MESSAGE ##### -->
+<para>
+
+</para>
+
+
+

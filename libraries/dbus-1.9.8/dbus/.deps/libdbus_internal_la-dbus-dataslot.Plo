@@ -1,0 +1,107 @@
+libdbus_internal_la-dbus-dataslot.lo: dbus-dataslot.c ../config.h \
+ dbus-dataslot.h ../dbus/dbus-internals.h ../dbus/dbus-memory.h \
+ ../dbus/dbus-macros.h /usr/lib/gcc/x86_64-linux-gnu/4.7/include/stddef.h \
+ ../dbus/dbus-types.h ../dbus/dbus-arch-deps.h ../dbus/dbus-errors.h \
+ ../dbus/dbus-protocol.h ../dbus/dbus-sysdeps.h \
+ /usr/lib/gcc/x86_64-linux-gnu/4.7/include/stdint.h /usr/include/stdint.h \
+ /usr/include/features.h /usr/include/x86_64-linux-gnu/bits/predefs.h \
+ /usr/include/x86_64-linux-gnu/sys/cdefs.h \
+ /usr/include/x86_64-linux-gnu/bits/wordsize.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+ /usr/include/x86_64-linux-gnu/bits/wchar.h /usr/include/inttypes.h \
+ ../dbus/dbus-file.h ../dbus/dbus-string.h \
+ /usr/lib/gcc/x86_64-linux-gnu/4.7/include/stdarg.h /usr/include/string.h \
+ /usr/include/xlocale.h /usr/include/x86_64-linux-gnu/bits/string.h \
+ /usr/include/x86_64-linux-gnu/bits/string2.h /usr/include/endian.h \
+ /usr/include/x86_64-linux-gnu/bits/endian.h \
+ /usr/include/x86_64-linux-gnu/bits/byteswap.h \
+ /usr/include/x86_64-linux-gnu/bits/types.h \
+ /usr/include/x86_64-linux-gnu/bits/typesizes.h /usr/include/stdlib.h \
+ /usr/include/x86_64-linux-gnu/sys/poll.h \
+ /usr/include/x86_64-linux-gnu/bits/poll.h \
+ /usr/include/x86_64-linux-gnu/bits/sigset.h /usr/include/time.h \
+ ../dbus/dbus-threads-internal.h ../dbus/dbus-threads.h \
+ dbus-threads-internal.h
+
+../config.h:
+
+dbus-dataslot.h:
+
+../dbus/dbus-internals.h:
+
+../dbus/dbus-memory.h:
+
+../dbus/dbus-macros.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.7/include/stddef.h:
+
+../dbus/dbus-types.h:
+
+../dbus/dbus-arch-deps.h:
+
+../dbus/dbus-errors.h:
+
+../dbus/dbus-protocol.h:
+
+../dbus/dbus-sysdeps.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.7/include/stdint.h:
+
+/usr/include/stdint.h:
+
+/usr/include/features.h:
+
+/usr/include/x86_64-linux-gnu/bits/predefs.h:
+
+/usr/include/x86_64-linux-gnu/sys/cdefs.h:
+
+/usr/include/x86_64-linux-gnu/bits/wordsize.h:
+
+/usr/include/x86_64-linux-gnu/gnu/stubs.h:
+
+/usr/include/x86_64-linux-gnu/gnu/stubs-64.h:
+
+/usr/include/x86_64-linux-gnu/bits/wchar.h:
+
+/usr/include/inttypes.h:
+
+../dbus/dbus-file.h:
+
+../dbus/dbus-string.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.7/include/stdarg.h:
+
+/usr/include/string.h:
+
+/usr/include/xlocale.h:
+
+/usr/include/x86_64-linux-gnu/bits/string.h:
+
+/usr/include/x86_64-linux-gnu/bits/string2.h:
+
+/usr/include/endian.h:
+
+/usr/include/x86_64-linux-gnu/bits/endian.h:
+
+/usr/include/x86_64-linux-gnu/bits/byteswap.h:
+
+/usr/include/x86_64-linux-gnu/bits/types.h:
+
+/usr/include/x86_64-linux-gnu/bits/typesizes.h:
+
+/usr/include/stdlib.h:
+
+/usr/include/x86_64-linux-gnu/sys/poll.h:
+
+/usr/include/x86_64-linux-gnu/bits/poll.h:
+
+/usr/include/x86_64-linux-gnu/bits/sigset.h:
+
+/usr/include/time.h:
+
+../dbus/dbus-threads-internal.h:
+
+../dbus/dbus-threads.h:
+
+dbus-threads-internal.h:

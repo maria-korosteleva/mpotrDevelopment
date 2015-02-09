@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.freedesktop.DBus.GLib.Test.Interfaces
+Exec=/home/mary/dbus-glib-0.102/test/interfaces/test-service

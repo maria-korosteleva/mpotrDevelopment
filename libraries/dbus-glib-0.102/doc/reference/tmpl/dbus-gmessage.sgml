@@ -1,0 +1,61 @@
+<!-- ##### SECTION Title ##### -->
+DBusGMessage
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### SECTION Image ##### -->
+
+
+<!-- ##### STRUCT DBusGMessage ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### MACRO DBUS_TYPE_G_MESSAGE ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### FUNCTION dbus_g_message_ref ##### -->
+<para>
+
+</para>
+
+@message: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_message_unref ##### -->
+<para>
+
+</para>
+
+@message: 
+
+
+<!-- ##### FUNCTION dbus_g_message_get_message ##### -->
+<para>
+
+</para>
+
+@gmessage: 
+@Returns: 
+
+

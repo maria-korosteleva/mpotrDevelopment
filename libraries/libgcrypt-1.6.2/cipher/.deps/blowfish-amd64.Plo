@@ -1,0 +1,3 @@
+blowfish-amd64.lo: blowfish-amd64.S ../config.h
+
+../config.h:

@@ -1,0 +1,271 @@
+<!-- ##### SECTION Title ##### -->
+DBusGProxy
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### SECTION Image ##### -->
+
+
+<!-- ##### STRUCT DBusGProxy ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### STRUCT DBusGProxyCall ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### USER_FUNCTION DBusGProxyCallNotify ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@call_id: 
+@user_data: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_new_for_name ##### -->
+<para>
+
+</para>
+
+@connection: 
+@name: 
+@path: 
+@iface: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_new_for_name_owner ##### -->
+<para>
+
+</para>
+
+@connection: 
+@name: 
+@path: 
+@iface: 
+@error: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_new_from_proxy ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@iface: 
+@path: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_new_for_peer ##### -->
+<para>
+
+</para>
+
+@connection: 
+@path: 
+@iface: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_set_interface ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@interface_name: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_get_path ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_get_bus_name ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_get_interface ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_add_signal ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@signal_name: 
+@first_type: 
+@...: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_connect_signal ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@signal_name: 
+@handler: 
+@data: 
+@free_data_func: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_disconnect_signal ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@signal_name: 
+@handler: 
+@data: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_send ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@message: 
+@client_serial: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_call ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@method: 
+@error: 
+@first_arg_type: 
+@...: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_call_with_timeout ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@method: 
+@timeout: 
+@error: 
+@first_arg_type: 
+@...: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_call_no_reply ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@method: 
+@first_arg_type: 
+@...: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_begin_call ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@method: 
+@notify: 
+@user_data: 
+@destroy: 
+@first_arg_type: 
+@...: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_begin_call_with_timeout ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@method: 
+@notify: 
+@user_data: 
+@destroy: 
+@timeout: 
+@first_arg_type: 
+@...: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_end_call ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@call: 
+@error: 
+@first_arg_type: 
+@...: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_cancel_call ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@call: 
+
+
+<!-- ##### FUNCTION dbus_g_proxy_set_default_timeout ##### -->
+<para>
+
+</para>
+
+@proxy: 
+@timeout: 
+
+

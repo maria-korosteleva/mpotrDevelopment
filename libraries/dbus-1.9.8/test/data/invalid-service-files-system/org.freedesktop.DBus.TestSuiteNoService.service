@@ -1,0 +1,4 @@
+[D-BUS Service]
+Exec=/home/mary/dbus-1.9.8/test/test-service
+User=anyrandomuser
+

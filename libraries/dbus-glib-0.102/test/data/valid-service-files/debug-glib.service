@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.freedesktop.DBus.GLib.TestService
+Exec=/home/mary/dbus-glib-0.102/test/core/test-service-glib

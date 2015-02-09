@@ -1,0 +1,3 @@
+rijndael-amd64.lo: rijndael-amd64.S ../config.h
+
+../config.h:

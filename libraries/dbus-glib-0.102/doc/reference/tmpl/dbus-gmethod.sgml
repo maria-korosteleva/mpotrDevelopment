@@ -1,0 +1,82 @@
+<!-- ##### SECTION Title ##### -->
+DBusGMethod
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### SECTION Image ##### -->
+
+
+<!-- ##### STRUCT DBusGMethodInfo ##### -->
+<para>
+
+</para>
+
+@function: 
+@marshaller: 
+@data_offset: 
+
+<!-- ##### STRUCT DBusGMethodInvocation ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION dbus_g_method_get_sender ##### -->
+<para>
+
+</para>
+
+@context: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_method_get_reply ##### -->
+<para>
+
+</para>
+
+@context: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_method_send_reply ##### -->
+<para>
+
+</para>
+
+@context: 
+@reply: 
+
+
+<!-- ##### FUNCTION dbus_g_method_return ##### -->
+<para>
+
+</para>
+
+@context: 
+@...: 
+
+
+<!-- ##### FUNCTION dbus_g_method_return_error ##### -->
+<para>
+
+</para>
+
+@context: 
+@error: 
+
+

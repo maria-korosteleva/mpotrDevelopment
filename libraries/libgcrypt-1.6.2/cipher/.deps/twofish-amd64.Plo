@@ -1,0 +1,3 @@
+twofish-amd64.lo: twofish-amd64.S ../config.h
+
+../config.h:

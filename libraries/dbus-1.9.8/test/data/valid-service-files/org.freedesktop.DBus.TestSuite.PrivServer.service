@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.freedesktop.DBus.TestSuite.PrivServer
+Exec=/home/mary/dbus-1.9.8/test/name-test/test-privserver
+

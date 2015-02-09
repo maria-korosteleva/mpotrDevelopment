@@ -1,0 +1,3 @@
+sha512-ssse3-amd64.lo: sha512-ssse3-amd64.S ../config.h
+
+../config.h:

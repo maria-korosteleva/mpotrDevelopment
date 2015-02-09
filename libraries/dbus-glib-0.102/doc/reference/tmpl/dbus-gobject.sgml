@@ -1,0 +1,91 @@
+<!-- ##### SECTION Title ##### -->
+DBus GObject related functions
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### SECTION Image ##### -->
+
+
+<!-- ##### STRUCT DBusGObjectInfo ##### -->
+<para>
+
+</para>
+
+@format_version: 
+@method_infos: 
+@n_method_infos: 
+@data: 
+@exported_signals: 
+@exported_properties: 
+
+<!-- ##### FUNCTION dbus_g_object_type_install_info ##### -->
+<para>
+
+</para>
+
+@object_type: 
+@info: 
+
+
+<!-- ##### FUNCTION dbus_g_object_type_register_shadow_property ##### -->
+<para>
+
+</para>
+
+@iface_type: 
+@dbus_prop_name: 
+@shadow_prop_name: 
+
+
+<!-- ##### FUNCTION dbus_g_object_path_get_g_type ##### -->
+<para>
+
+</para>
+
+@void: 
+@Returns: 
+
+
+<!-- ##### FUNCTION dbus_g_object_register_marshaller ##### -->
+<para>
+
+</para>
+
+@marshaller: 
+@rettype: 
+@...: 
+
+
+<!-- ##### FUNCTION dbus_g_object_register_marshaller_array ##### -->
+<para>
+
+</para>
+
+@marshaller: 
+@rettype: 
+@n_types: 
+@types: 
+
+
+<!-- ##### FUNCTION dbus_glib_global_set_disable_legacy_property_access ##### -->
+<para>
+
+</para>
+
+@void: 
+
+

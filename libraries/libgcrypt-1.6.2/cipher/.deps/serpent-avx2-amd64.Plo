@@ -1,0 +1,3 @@
+serpent-avx2-amd64.lo: serpent-avx2-amd64.S ../config.h
+
+../config.h:
