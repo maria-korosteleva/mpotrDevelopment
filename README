@@ -1,8 +1,23 @@
 This is mpOTR development README by MSU researches
 
-To run this you need:
-pidgin
-libotr-4.0.0 -- not really needed now
-pidgin-otr-4.0.0 -- not really needed now
-dbus-1.8.0
-dbus-python-1.2.0
+Requirements:
+	pidgin
+	libotr-4.0.0 -- not really needed now
+	pidgin-otr-4.0.0 -- not really needed now
+	dbus-1.8.0
+	dbus-glib
+	dbus-python-1.2.0
+	libgpg-error
+	libgcrypt *should be installed to /usr -- use ./configure --prefix=/usr *
+	At least tree XMPP accounts (we recommend qip.ru) active (online) in your
+pidgin. They may need to each others "buddies"
+	Conversation ("room") with those three accounts as the only participants
+
+To start a protocol demonstration:
+	- Start Pidgin
+	- Go online with all N accounts you want to use
+	- Make sure all N accounts are in the room you've chosen
+	- Run N instansees of auth.py for each account you have
+	- Look
+Result: Log of the main course of the mpOTR protocol (one session).
+

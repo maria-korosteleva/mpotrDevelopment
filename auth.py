@@ -112,7 +112,7 @@ def receivedMessage(account, sender, message, conversation, flags):
             elif (mess_splitted[1] == "ERR"):
                 print "mpOTR ERROR: ", mess_splitted[2]
         
-############### Round 1 processing ####
+############### Authentication Round 1 processing ####
 #
 # Generate keys and send message to chat
 #
@@ -160,7 +160,7 @@ def processRound_1(sender, message):
             context.r_1.recieved +=1
 
 
-############### Round 2 processing ####
+############### Authentication Round 2 processing ####
 #
 # Generate sid, auth info and send message to chat
 #
@@ -198,7 +198,7 @@ def processRound_2(sender, message):
                 context.expAuthNonce[i] = mess_splitted[1]
                 context.r_2.recieved +=1
 
-############### Round 3 processing ####
+############### Authentication Round 3 processing ####
 #
 # Generate t's and send message to chat
 #
@@ -246,7 +246,7 @@ def processRound_3(sender, message):
             context.bigTList[i] = mess_splitted[1]
             context.r_3.recieved +=1
 
-############### Round 4 processing ####
+############### Authentication Round 4 processing ####
 #
 # Generate t's and send message to chat
 #
@@ -354,16 +354,16 @@ def processNonce(sender, nonce):
         print "This Session's ID is ", base64.b64encode(sid)
 
 
-####################### Main program #############################
+####################### Main Main program #############################
 
 # Import libraries
 import dbus, gobject, ctypes
 import base64
-from ctypes import *
+from ctypes import * 
 from dbus.mainloop.glib import DBusGMainLoop
-dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+DBusGMainLoop(set_as_default=True)
 bus = dbus.SessionBus()
-crypto = ctypes.CDLL('/root/mpotrDevelopment/c_func_mpotr.so')
+crypto = ctypes.CDLL('/home/mary/mpOTRDevelopment/c_func_mpotr.so')
 crypto.initLibgcrypt()
 crypto.getSomeNonce.restype = c_char_p #return type
 crypto.hash.restype = c_char_p #return type
