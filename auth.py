@@ -370,7 +370,6 @@ DBusGMainLoop(set_as_default=True)
 bus = dbus.SessionBus()
 from os.path import join, split
 crypto = ctypes.CDLL(join(split(__file__)[0],'./c_func_mpotr.so'))
-
 crypto.initLibgcrypt()
 crypto.getSomeNonce.restype = c_char_p #return type
 crypto.hash.restype = c_char_p #return type
@@ -389,6 +388,10 @@ bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.Purple
 obj = bus.get_object("im.pidgin.purple.PurpleService", "/im/pidgin/purple/PurpleObject")
 purple = dbus.Interface(obj, "im.pidgin.purple.PurpleInterface")
 
+# find another prime we need
+crypto.findq();
+
+
 # Choose one of three XMPP accounts
 i = 1
 for acc in purple.PurpleAccountsGetAllActive():
@@ -404,7 +407,7 @@ print "\nYour account is ", purple.PurpleAccountGetUsername(account)
 # Fing needed chat
 for conv_chat in purple.PurpleGetChats():
     ch_acc = purple.PurpleConversationGetAccount(conv_chat)
-    if ch_acc == account:
+    if ch_acc == account:    # FIX NEEDED: potentially fails with several chats
          chat = purple.PurpleConvChat(conv_chat)
          
 # Create the context

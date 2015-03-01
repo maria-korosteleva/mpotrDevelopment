@@ -3,7 +3,30 @@
 #include "b64.h"
 #include <gcrypt.h>
 
+// Some constants -- predefined prime numbers used in the protocol for modulo operations
+const char q[] = "\x00";
+const char p[] = ""
+
+    "00FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1"
+    "29024E088A67CC74020BBEA63B139B22514A08798E3404DD"
+    "EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245"
+    "E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7ED"
+    "EE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3D"
+    "C2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F"
+    "83655D23DCA3AD961C62F356208552BB9ED529077096966D"
+    "670C354E4ABC9804F1746C08CA237327FFFFFFFFFFFFFFFF";
+/*    
+    "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xC9\x0F\xDA\xA2\x21\x68\xC2\x34\xC4\xC6\x62\x8B\x80\xDC\x1C\xD1"
+    "\x29\x02\x4E\x08\x8A\x67\xCC\x74\x02\x0B\xBE\xA6\x3B\x13\x9B\x22\x51\x4A\x08\x79\x8E\x34\x04\xDD"
+    "\xEF\x95\x19\xB3\xCD\x3A\x43\x1B\x30\x2B\x0A\x6D\xF2\x5F\x14\x37\x4F\xE1\x35\x6D\x6D\x51\xC2\x45"
+    "\xE4\x85\xB5\x76\x62\x5E\x7E\xC6\xF4\x4C\x42\xE9\xA6\x37\xED\x6B\x0B\xFF\x5C\xB6\xF4\x06\xB7\xED"
+    "\xEE\x38\x6B\xFB\x5A\x89\x9F\xA5\xAE\x9F\x24\x11\x7C\x4B\x1F\xE6\x49\x28\x66\x51\xEC\xE4\x5B\x3D"
+    "\xC2\x00\x7C\xB8\xA1\x63\xBF\x05\x98\xDA\x48\x36\x1C\x55\xD3\x9A\x69\x16\x3F\xA8\xFD\x24\xCF\x5F"
+    "\x83\x65\x5D\x23\xDC\xA3\xAD\x96\x1C\x62\xF3\x56\x20\x85\x52\xBB\x9E\xD5\x29\x07\x70\x96\x96\x6D"
+    "\x67\x0C\x35\x4E\x4A\xBC\x98\x04\xF1\x74\x6C\x08\xCA\x23\x73\x27\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF";
+*/
 void myprint(void);
+void findq(void);
 void initLibgcrypt();
 unsigned char* generateKeys();
 unsigned char* getSomeNonce(int length);
@@ -13,12 +36,54 @@ unsigned char* getPubPrivKey(char* b64_keys, const char* type);
 unsigned char* xor (const unsigned char* left_64, const unsigned char* right_64);
 unsigned char* minus(const unsigned char* first_64, const unsigned char* second_64);
 unsigned char* mult(const unsigned char* first_64, const unsigned char* second_64);
+unsigned char* sign(const unsigned char* info, const unsigned char* key_64);
 
 void myprint()
 {
     printf("hello world\n");
 }
 
+void findq()
+{
+    // MPI from p, 1, 2
+    unsigned char* result, *res1, *res2;
+    size_t reslen, res1len, res2len;
+    gcry_mpi_t p_mpi;
+    size_t p_mpi_len;
+    int err = gcry_mpi_scan(&p_mpi, GCRYMPI_FMT_USG, p, 192, &p_mpi_len);
+    if (err) {
+        printf("gcrypt: failed to scan mpi from p prime number\n");
+        printf ("Failure: %s/%s\n",
+                    gcry_strsource (err),
+                    gcry_strerror (err));
+    } 
+    gcry_mpi_aprint(GCRYMPI_FMT_HEX, &result, &reslen, p_mpi);
+    printf("This should be a number ""p"" :\n%s\n\n", result);
+    free(result);
+    
+    gcry_mpi_t mpi_1 = gcry_mpi_set_ui(NULL, 1); 
+    gcry_mpi_t mpi_2 = gcry_mpi_set_ui(NULL, 2); 
+    
+    // minus 1
+    gcry_mpi_sub(p_mpi, p_mpi, mpi_1);
+    gcry_mpi_aprint(GCRYMPI_FMT_HEX, &result, &reslen, p_mpi);
+    printf("This should be a number ""p-1"" :\n%s\n\n", result);
+    free(result);
+    
+    // divide by 2
+    gcry_mpi_div(p_mpi, mpi_1, p_mpi, mpi_2, 0);
+    
+    // back to char
+    gcry_mpi_aprint(GCRYMPI_FMT_HEX, &result, &reslen, p_mpi);
+    gcry_mpi_aprint(GCRYMPI_FMT_HEX, &res1, &res1len, mpi_1);
+    
+    // printf in appropriate manner
+    printf("The resulting number is:\n%s\n\n", result);
+    
+    // do the same for the reminder
+    printf("The reminder is:\n%s\n\n", res1);
+    // Clean the area
+}
 
 unsigned char* sign(const unsigned char* info, const unsigned char* key_64)
 {
@@ -38,25 +103,6 @@ unsigned char* sign(const unsigned char* info, const unsigned char* key_64)
     unsigned char* info_h_64 = hash(info, strlen(info));
     int infoLen;
     unsigned char* info_hashed = unbase64(info_h_64, strlen(info_h_64), &infoLen);
-    ///// 2nd variant
-    //err = gcry_sexp_build (&data, NULL,
-    //                    "(data (flags pkcs1)(hash %s %b))",
-    //                    "sha256", (int)infoLen, info_hashed); 
-    ///// 3d variant
-    //err = gcry_sexp_build (&data, NULL,
-    //                   "(data (flags pkcs1)(hash sha256 %b))",
-    //                     (int)infoLen, info_hashed); 
-    ///// 4th variant
-    //err = gcry_sexp_build(&data, NULL, "%m", info_hashed)
-    /////// First variant
-    //unsigned char* param;
-    //param = (unsigned char*) malloc ((strlen(info) + 40) * sizeof(char));
-    //param[0] = '\0';
-    //strcpy(param, "(data (flags pkcs1) (hash sha256 ");
-    //strcat(param, info);
-    //strcat(param, "))");
-    //printf("Data prepared %s\n", param);
-    //err = gcry_sexp_new (&data, param, strlen(param), 0); // Or build?
     gcry_mpi_t info_mpi;
     size_t info_mpi_len;
     err = gcry_mpi_scan(&info_mpi, GCRYMPI_FMT_USG, info_hashed, infoLen-1, &info_mpi_len);
@@ -82,11 +128,11 @@ unsigned char* sign(const unsigned char* info, const unsigned char* key_64)
         printf ("Failure: %s/%s\n",
                     gcry_strsource (err),
                     gcry_strerror (err));
-    	int len = gcry_sexp_sprint(data, GCRYSEXP_FMT_DEFAULT, NULL, 0);
-    	unsigned char* tmp = (unsigned char*) malloc ((len) * sizeof(char));
-    	int length = gcry_sexp_sprint(data, GCRYSEXP_FMT_DEFAULT, tmp, len);
-    	tmp[length] = '\0';
-	printf("Data S-exp is \n %s \nInfoLen is %lu\nInfo64Len = %lu\n", tmp, strlen(info_hashed), strlen(info_h_64));
+        //int len = gcry_sexp_sprint(data, GCRYSEXP_FMT_DEFAULT, NULL, 0);
+        //unsigned char* tmp = (unsigned char*) malloc ((len) * sizeof(char));
+        //int length = gcry_sexp_sprint(data, GCRYSEXP_FMT_DEFAULT, tmp, len);
+        //tmp[length] = '\0';
+        //printf("Data S-exp is \n %s \nInfoLen is %lu\nInfo64Len = %lu\n", tmp, strlen(info_hashed), strlen(info_h_64));
     }
     // to string
     int len = gcry_sexp_sprint(signature, GCRYSEXP_FMT_DEFAULT, NULL, 0);
@@ -98,9 +144,13 @@ unsigned char* sign(const unsigned char* info, const unsigned char* key_64)
     int res_len = 0;
     unsigned char* res_64 = base64(result, len, &res_len);
     gcry_sexp_release(signature);
+    gcry_sexp_release(key_s);
     gcry_sexp_release(data);
+    gcry_mpi_release(info_mpi);
     free(result);
-    //free(param);
+    free(key);
+    free(info_h_64);
+    free(info_hashed);
     return res_64;
 }
 
