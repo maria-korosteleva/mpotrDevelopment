@@ -127,14 +127,16 @@ def sendRound_1():
     context.myPrivKey = crypto.getSomeNonce(c_int(len_authNonce_random))
     context.myPubKey = crypto.exponent(c_char_p("2"), c_char_p(context.myPrivKey))
     
-    # Generate Ephemeral keys
+    # Generate/Read from file Ephemeral keys
     #context.myEphKeys = crypto.generateKeys()
     file = open("ephkey"+context.myUsername+".txt", 'r')
     context.myEphKeys = file.read()
+    #file.write(context.myEphKeys)
     file.close()
     #context.myEphPubKey = crypto.getPubPrivKey(c_char_p(context.myEphKeys), c_char_p("public-key"))
     file = open("ephPubkey"+context.myUsername+".txt", 'r')
     context.myEphPubKey = file.read()
+    #file.write(context.myEphPubKey)
     file.close()
     
     # Send message 
@@ -316,7 +318,7 @@ def processRound_4(sender, message):
             # verify recieved d_i (mess_splitted[0]) with z_i
             exp_1 = crypto.exponent(c_char_p("2"), c_char_p(mess_splitted[0]))
             exp_2 = crypto.exponent(c_char_p(context.myPrivKey), c_char_p(context.c_i))
-            d_check = crypto.mult(c_char_p(exp_1), c_char_p(exp_2))
+            #d_check = crypto.mult(c_char_p(exp_1), c_char_p(exp_2))
             #if d_check != context.expAuthNonce[i]:
             #    purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ "Error at verifing auth info -- bad exponent")
             #    break
@@ -363,7 +365,7 @@ from ctypes import *
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
 bus = dbus.SessionBus()
-crypto = ctypes.CDLL('/home/mary/mpOTRDevelopment/c_func_mpotr.so')
+crypto = ctypes.CDLL('/home/masha/mpOTRDevelopment/c_func_mpotr.so') # FIXME: put normal path here!
 crypto.initLibgcrypt()
 crypto.getSomeNonce.restype = c_char_p #return type
 crypto.hash.restype = c_char_p #return type

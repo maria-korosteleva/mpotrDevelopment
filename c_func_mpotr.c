@@ -38,10 +38,17 @@ unsigned char* sign(const unsigned char* info, const unsigned char* key_64)
     unsigned char* info_h_64 = hash(info, strlen(info));
     int infoLen;
     unsigned char* info_hashed = unbase64(info_h_64, strlen(info_h_64), &infoLen);
-    err = gcry_sexp_build (&data, NULL,
-                        "(data (flags pkcs1)(hash %s %b))",
-                        "sha256", (int)infoLen, info_hashed); 
-    
+    ///// 2nd variant
+    //err = gcry_sexp_build (&data, NULL,
+    //                    "(data (flags pkcs1)(hash %s %b))",
+    //                    "sha256", (int)infoLen, info_hashed); 
+    ///// 3d variant
+    //err = gcry_sexp_build (&data, NULL,
+    //                   "(data (flags pkcs1)(hash sha256 %b))",
+    //                     (int)infoLen, info_hashed); 
+    ///// 4th variant
+    //err = gcry_sexp_build(&data, NULL, "%m", info_hashed)
+    /////// First variant
     //unsigned char* param;
     //param = (unsigned char*) malloc ((strlen(info) + 40) * sizeof(char));
     //param[0] = '\0';
@@ -50,6 +57,16 @@ unsigned char* sign(const unsigned char* info, const unsigned char* key_64)
     //strcat(param, "))");
     //printf("Data prepared %s\n", param);
     //err = gcry_sexp_new (&data, param, strlen(param), 0); // Or build?
+    gcry_mpi_t info_mpi;
+    size_t info_mpi_len;
+    err = gcry_mpi_scan(&info_mpi, GCRYMPI_FMT_USG, info_hashed, infoLen-1, &info_mpi_len);
+    if (err) {
+        printf("gcrypt: failed to scan mpi from info while signing\n");
+        printf ("Failure: %s/%s\n",
+                    gcry_strsource (err),
+                    gcry_strerror (err));
+    }
+    err = gcry_sexp_build(&data, NULL, "%m", info_mpi);
     if (err) {
         printf("gcrypt: failed to convert data info\n");
         printf ("Failure: %s/%s\n",
@@ -65,6 +82,11 @@ unsigned char* sign(const unsigned char* info, const unsigned char* key_64)
         printf ("Failure: %s/%s\n",
                     gcry_strsource (err),
                     gcry_strerror (err));
+    	int len = gcry_sexp_sprint(data, GCRYSEXP_FMT_DEFAULT, NULL, 0);
+    	unsigned char* tmp = (unsigned char*) malloc ((len) * sizeof(char));
+    	int length = gcry_sexp_sprint(data, GCRYSEXP_FMT_DEFAULT, tmp, len);
+    	tmp[length] = '\0';
+	printf("Data S-exp is \n %s \nInfoLen is %lu\nInfo64Len = %lu\n", tmp, strlen(info_hashed), strlen(info_h_64));
     }
     // to string
     int len = gcry_sexp_sprint(signature, GCRYSEXP_FMT_DEFAULT, NULL, 0);
@@ -328,11 +350,14 @@ unsigned char* hash(const unsigned char* str, int length)
     // int strLen = 0;
     // unsigned char* str = unbase64(str_64, strlen(str_64), &keysLen);
     int hash_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256);
+    //printf("SHA256 length is %d\n", hash_len);
     unsigned char* digest = (unsigned char*) gcry_malloc(hash_len+1);
     digest[hash_len] = '\0';
     gcry_md_hash_buffer(GCRY_MD_SHA256, digest, str, length);
+    //printf("SHA256 digest is %s\nLegth is %lu\n", digest, strlen(digest));
     int res_len = 0;
     unsigned char* digest_64 = base64(digest, hash_len+1, &res_len);
+    //printf("base64 digest is %s\nLegth is %lu\n", digest_64, strlen(digest_64));
     free(digest);
     return digest_64;
 }

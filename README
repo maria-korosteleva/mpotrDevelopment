@@ -4,8 +4,9 @@ Requirements:
 	pidgin
 	libotr-4.0.0 -- not really needed now
 	pidgin-otr-4.0.0 -- not really needed now
+	pygobject from gtk2 (gtk3 introduces new interface module 'gi')
 	dbus-1.8.0
-	dbus-glib
+	dbus-glib 
 	dbus-python-1.2.0
 	libgpg-error
 	libgcrypt *should be installed to /usr -- use ./configure --prefix=/usr *
