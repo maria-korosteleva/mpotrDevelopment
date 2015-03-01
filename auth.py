@@ -365,7 +365,7 @@ from ctypes import *
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
 bus = dbus.SessionBus()
-crypto = ctypes.CDLL('/home/masha/mpOTRDevelopment/c_func_mpotr.so') # FIXME: put normal path here!
+crypto = ctypes.CDLL('./c_func_mpotr.so')
 crypto.initLibgcrypt()
 crypto.getSomeNonce.restype = c_char_p #return type
 crypto.hash.restype = c_char_p #return type
