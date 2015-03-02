@@ -388,10 +388,6 @@ bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.Purple
 obj = bus.get_object("im.pidgin.purple.PurpleService", "/im/pidgin/purple/PurpleObject")
 purple = dbus.Interface(obj, "im.pidgin.purple.PurpleInterface")
 
-# find another prime we need
-crypto.findq();
-
-
 # Choose one of three XMPP accounts
 i = 1
 for acc in purple.PurpleAccountsGetAllActive():
