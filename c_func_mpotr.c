@@ -4,10 +4,15 @@
 #include <gcrypt.h>
 
 // Some constants -- predefined prime numbers used in the protocol for modulo operations
-const int p_len = 192;
-const int q_len = 192;
+
+const int p_len = 2;
+const int q_len = 1;
+//const int p_len = 192;
+//const int q_len = 192;
 
 const char p[] = ""
+    "\x01\xB7"; // 439
+/*
     "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xC9\x0F\xDA\xA2\x21\x68\xC2\x34\xC4\xC6\x62\x8B\x80\xDC\x1C\xD1"
     "\x29\x02\x4E\x08\x8A\x67\xCC\x74\x02\x0B\xBE\xA6\x3B\x13\x9B\x22\x51\x4A\x08\x79\x8E\x34\x04\xDD"
     "\xEF\x95\x19\xB3\xCD\x3A\x43\x1B\x30\x2B\x0A\x6D\xF2\x5F\x14\x37\x4F\xE1\x35\x6D\x6D\x51\xC2\x45"
@@ -16,8 +21,12 @@ const char p[] = ""
     "\xC2\x00\x7C\xB8\xA1\x63\xBF\x05\x98\xDA\x48\x36\x1C\x55\xD3\x9A\x69\x16\x3F\xA8\xFD\x24\xCF\x5F"
     "\x83\x65\x5D\x23\xDC\xA3\xAD\x96\x1C\x62\xF3\x56\x20\x85\x52\xBB\x9E\xD5\x29\x07\x70\x96\x96\x6D"
     "\x67\x0C\x35\x4E\x4A\xBC\x98\x04\xF1\x74\x6C\x08\xCA\x23\x73\x27\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF";
+*/
 // p = 2*q +1
 const char q[] = ""
+    "\xEF"; // 239
+
+/*
     "\x7F\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xE4\x87\xED\x51\x10\xB4\x61\x1A\x62\x63\x31\x45\xC0\x6E\x0E\x68"
     "\x94\x81\x27\x04\x45\x33\xE6\x3A\x01\x05\xDF\x53\x1D\x89\xCD\x91\x28\xA5\x04\x3C\xC7\x1A\x02\x6E"
     "\xF7\xCA\x8C\xD9\xE6\x9D\x21\x8D\x98\x15\x85\x36\xF9\x2F\x8A\x1B\xA7\xF0\x9A\xB6\xB6\xA8\xE1\x22"
@@ -26,7 +35,7 @@ const char q[] = ""
     "\xE1\x00\x3E\x5C\x50\xB1\xDF\x82\xCC\x6D\x24\x1B\x0E\x2A\xE9\xCD\x34\x8B\x1F\xD4\x7E\x92\x67\xAF"
     "\xC1\xB2\xAE\x91\xEE\x51\xD6\xCB\x0E\x31\x79\xAB\x10\x42\xA9\x5D\xCF\x6A\x94\x83\xB8\x4B\x4B\x36"
     "\xB3\x86\x1A\xA7\x25\x5E\x4C\x02\x78\xBA\x36\x04\x65\x11\xB9\x93\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF";
-
+*/
 void myprint(void);
 void findq(void);
 void initLibgcrypt();
@@ -34,7 +43,7 @@ unsigned char* generateKeys();
 unsigned char* getSomeNonce(int length);
 unsigned char* hash(const unsigned char* str, int length);
 unsigned char* exponent(const unsigned char* base, const unsigned char* power);
-unsigned char* getPubPrivKey(char* b64_keys, const char* type);
+unsigned char* getPubPrivKey(const char* b64_keys, const char* type);
 unsigned char* xor (const unsigned char* left_64, const unsigned char* right_64);
 unsigned char* minus(const unsigned char* first_64, const unsigned char* second_64);
 unsigned char* mult(const unsigned char* first_64, const unsigned char* second_64);
@@ -60,7 +69,7 @@ void findq()
                     gcry_strerror (err));
     } 
     gcry_mpi_aprint(GCRYMPI_FMT_HEX, &result, &reslen, p_mpi);
-    printf("This should be a number ""p"" :\n%s\n\n", result);
+    printf("This should be a number ""p"" of length %lu and mpi length %lu :\n%s\n\n", reslen, p_mpi_len, result);
     free(result);
     
     gcry_mpi_t mpi_1 = gcry_mpi_set_ui(NULL, 1); 
@@ -69,7 +78,7 @@ void findq()
     // minus 1
     gcry_mpi_sub(p_mpi, p_mpi, mpi_1);
     gcry_mpi_aprint(GCRYMPI_FMT_HEX, &result, &reslen, p_mpi);
-    printf("This should be a number ""p-1"" :\n%s\n\n", result);
+    printf("This should be a number ""p-1"" of length %lu :\n%s\n\n", reslen, result);
     free(result);
     
     // divide by 2
@@ -80,10 +89,10 @@ void findq()
     gcry_mpi_aprint(GCRYMPI_FMT_HEX, &res1, &res1len, mpi_1);
     
     // printf in appropriate manner
-    printf("The resulting number is:\n%s\n\n", result);
+    printf("The resulting number is of length %lu:\n%s\n\n", reslen, result);
     
     // do the same for the reminder
-    printf("The reminder is:\n%s\n\n", res1);
+    printf("The reminder is of legth %lu:\n%s\n\n", res1len, res1);
     // Clean the area
     gcry_mpi_release(p_mpi); 
     gcry_mpi_release(mpi_1); 
@@ -96,7 +105,7 @@ void findq()
     size_t q_mpi_len;
     int err = gcry_mpi_scan(&q_mpi, GCRYMPI_FMT_USG, q, q_len, &q_mpi_len);
     if (err) {
-        printf("gcrypt: failed to scan mpi from p prime number\n");
+        printf("gcrypt: failed to scan mpi from q prime number\n");
         printf ("Failure: %s/%s\n",
                     gcry_strsource (err),
                     gcry_strerror (err));
@@ -190,13 +199,13 @@ unsigned char* mult(const unsigned char* first_64, const unsigned char* second_6
     gcry_mpi_t first_mpi = gcry_mpi_new (8);
     err = gcry_mpi_scan(&first_mpi, GCRYMPI_FMT_USG, first, strlen(first), &nscanned);
     if (err) {
-        printf("gcrypt: failed to scan the base number\n");
+        printf("gcrypt: failed to scan the first number in mult\n");
     }
     
     gcry_mpi_t second_mpi = gcry_mpi_new (8);
     err = gcry_mpi_scan(&second_mpi, GCRYMPI_FMT_USG, second, strlen(second), &nscanned);
     if (err) {
-        printf("gcrypt: failed to scan the power number\n");
+        printf("gcrypt: failed to scan the second number in mult\n");
     }
     gcry_mpi_t res = gcry_mpi_new (8);
     
@@ -232,13 +241,13 @@ unsigned char* minus(const unsigned char* first_64, const unsigned char* second_
     gcry_mpi_t first_mpi = gcry_mpi_new (8);
     err = gcry_mpi_scan(&first_mpi, GCRYMPI_FMT_USG, first, strlen(first), &nscanned);
     if (err) {
-        printf("gcrypt: failed to scan the base number\n");
+        printf("gcrypt: failed to scan the first number in minus\n");
     }
     
     gcry_mpi_t second_mpi = gcry_mpi_new (8);
     err = gcry_mpi_scan(&second_mpi, GCRYMPI_FMT_USG, second, strlen(second), &nscanned);
     if (err) {
-        printf("gcrypt: failed to scan the power number\n");
+        printf("gcrypt: failed to scan the second number in minus\n");
     }
     gcry_mpi_t res = gcry_mpi_new (8);
     
@@ -296,9 +305,19 @@ unsigned char* xor (const unsigned char* left_64, const unsigned char* right_64)
 
 unsigned char* exponent(const unsigned char* base_64, const unsigned char* power_64)
 {
-    gcry_mpi_t module = gcry_mpi_set_ui(NULL, 123456789);
+    //gcry_mpi_t module = gcry_mpi_set_ui(NULL, 123456789);
+    gcry_mpi_t p_mpi; // This is the new module
+    size_t p_mpi_len;
+    int err = gcry_mpi_scan(&p_mpi, GCRYMPI_FMT_USG, p, p_len, &p_mpi_len);
+    if (err) {
+        printf("gcrypt: failed to scan mpi from p prime number\n");
+        printf ("Failure: %s/%s\n",
+                    gcry_strsource (err),
+                    gcry_strerror (err));
+    } 
+    
     size_t nscanned = 0;
-    int err, baseLen = 0;
+    int baseLen = 0;
     unsigned char* base = 0; // raw
     // convert numbers
     gcry_mpi_t base_mpi = gcry_mpi_new (8);
@@ -322,7 +341,7 @@ unsigned char* exponent(const unsigned char* base_64, const unsigned char* power
         printf("gcrypt: failed to scan the power number\n");
     }
     gcry_mpi_t res = gcry_mpi_new (8);
-    gcry_mpi_powm(res, base_mpi, power_mpi, module);
+    gcry_mpi_powm(res, base_mpi, power_mpi, p_mpi);
     unsigned char* result;
     size_t length = 0;
     err = gcry_mpi_aprint (GCRYMPI_FMT_USG, &result, &length, res);
@@ -332,16 +351,17 @@ unsigned char* exponent(const unsigned char* base_64, const unsigned char* power
     unsigned char* result_64 = base64(result, length, &res_64_len);
     
     if (base) free(base);
+    free(power);
     free(result);
     gcry_mpi_release(power_mpi);
     gcry_mpi_release(base_mpi);
-    gcry_mpi_release(module);
+    gcry_mpi_release(p_mpi);
     gcry_mpi_release(res);
     
     return result_64;
 }
 
-unsigned char* getPubPrivKey(char* b64_keys, const char* type)
+unsigned char* getPubPrivKey(const char* b64_keys, const char* type)
 {
     int keysLen = 0;
     unsigned char* keys = unbase64(b64_keys, strlen(b64_keys), &keysLen);
@@ -370,6 +390,7 @@ unsigned char* getPubPrivKey(char* b64_keys, const char* type)
     gcry_sexp_release(r_key);
     gcry_sexp_release(r_sub_key);
     free(sub_key);
+    free(keys);
     
     return buffer_res;
 }
@@ -404,13 +425,60 @@ unsigned char* generateKeys()
     return buffer_res;
 }
 
-
+// if length == 0 then the randomization is made modulo q
 unsigned char* getSomeNonce(int length)
 {
-    unsigned char* buffer = (unsigned char*) gcry_malloc((length+1) * sizeof(char));
-    buffer[length] = '\0';
-    gcry_randomize (buffer, length, GCRY_STRONG_RANDOM);
-    // void * gcry_random_bytes (size_t nbytes, enum gcry_random_level level);
+    printf("getNonce of length %d\n", length);
+    if (!length) length = q_len; // not for everyone, at least not for k values
+    
+    //unsigned char* buffer;
+    unsigned char* buffer = (unsigned char*) gcry_malloc(length * sizeof(char));
+    //unsigned char* buffer = (unsigned char*) gcry_malloc((length+1) * sizeof(char));
+    //buffer[length] = '\0';
+    // randomize
+    //gcry_randomize (buffer, length, GCRY_STRONG_RANDOM);
+    //size_t buflen = length;
+    //unsigned char* buffer = gcry_random_bytes (length, GCRY_STRONG_RANDOM);
+    gcry_create_nonce(buffer, length);
+
+    if (length == q_len)
+    {
+    	printf("Non-k generation\n");
+        gcry_mpi_t q_mpi, buf_mpi;
+        size_t q_mpi_len, buf_mpi_len;
+        int err = gcry_mpi_scan(&q_mpi, GCRYMPI_FMT_USG, q, q_len, &q_mpi_len);
+        if (err) {
+            printf("gcrypt: failed to scan mpi from q prime number in GetSome nonce\n");
+            printf ("Failure: %s/%s\n",
+                        gcry_strsource (err),
+                        gcry_strerror (err));
+        } 
+        err = gcry_mpi_scan(&buf_mpi, GCRYMPI_FMT_USG, buffer, length, &buf_mpi_len);
+        if (err) {
+            printf("gcrypt: failed to scan mpi from buffer in GetSomeNonce\n");
+            printf ("Failure: %s/%s\n",
+                        gcry_strsource (err),
+                        gcry_strerror (err));
+        } 
+	////
+	gcry_mpi_t tmp_res_mpi = gcry_mpi_new(8);
+	gcry_mpi_sub(tmp_res_mpi, q_mpi, buf_mpi);
+	unsigned char* tmp_res;
+	size_t tmp_res_len;
+	gcry_mpi_aprint(GCRYMPI_FMT_HEX, &tmp_res, &tmp_res_len, tmp_res_mpi);
+	//printf("Subb q - buffer is \n%s\n", tmp_res);
+	free(tmp_res);
+	gcry_mpi_release(tmp_res_mpi);
+        ////
+        gcry_mpi_mod(buf_mpi, buf_mpi, q_mpi);
+        size_t res_buf_len;
+	free(buffer);
+        gcry_mpi_aprint(GCRYMPI_FMT_USG, &buffer, &res_buf_len, buf_mpi);
+	length = res_buf_len;
+	// if length is not enough?? 
+        gcry_mpi_release(q_mpi);
+        gcry_mpi_release(buf_mpi);
+    }
     int res_len = 0;
     unsigned char* buffer_64 = base64(buffer, length, &res_len);
     free(buffer);
