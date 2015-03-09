@@ -64,7 +64,7 @@ len_authNonce_random = 0 # May be we should make it larger,
 def receivedMessage(account, sender, message, conversation, flags):
     global context
     if conversation == purple.PurpleConvChatGetConversation(context.chat):
-        #print sender, "said:", message Just for the debugging purpose
+        #print sender, "said:", message # Commented for DEBUGing purpose 
         mess_splitted = message.split(":", 2)
         if (len(mess_splitted) == 3) and (mess_splitted[0] == "mpOTR"):
             if mess_splitted[1] == "Init":
@@ -109,8 +109,7 @@ def receivedMessage(account, sender, message, conversation, flags):
                     context.r_4.sended = 1
                 if (context.r_4.recieved == context.members_count): 
                 # Round finished
-                    print "ROUND 4 FINISHED"
-                    #print "Success! IDSKE finished!"
+                    print "Success! IDSKE finished!"
             elif (mess_splitted[1] == "ERR"):
                 print "mpOTR ERROR: ", mess_splitted[2]
         
@@ -173,12 +172,14 @@ def sendRound_2():
     # generate SID
     sid_raw = ""
     for i in range(0, context.r_1.recieved):
-        sid_raw += base64.b64decode(context.hashedNonceList[i])
+        sid_raw += context.hashedNonceList[i]
+        #sid_raw += base64.b64decode(context.hashedNonceList[i])
     # hash it to get SID
     context.sid = crypto.hash(c_char_p(sid_raw), c_int(len(sid_raw))) # is the length ok? #FIX
     # generate auth nonce
     context.r_i = crypto.getSomeNonce(c_int(len_authNonce_random))
     # get exponent of auth nonce
+    #print "Get exponent of auth nonce"
     context.exp_r_i = crypto.exponent( c_char_p("2"), c_char_p(context.r_i))
     # Send message 
     purple.PurpleConvChatSend(chat, "mpOTR:A_R2:"+context.sid+";"+ context.exp_r_i)
@@ -197,6 +198,7 @@ def processRound_2(sender, message):
             # Check if all the sid's are the same
             if context.sid != mess_splitted[0]:
                 purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ sender +" sended a wrong SessionID")    
+                print sender, " sended a wrong SID"
             else:
                 ## Add exponent of authNonce to list
                 context.expAuthNonce[i] = mess_splitted[1]
@@ -263,9 +265,9 @@ def sendRound_4():
     # decrypt Nonces
     i = context.myNum
     t_R = context.my_t_right
-    print "I'm ", i, ", tr is ", t_R
-    print "I'm ", i, ", tL is ", context.my_t_left
-    print "I am ", context.myNum, ", my ki is ", context.k_i
+    #print "I'm ", i   #, ", tr is ", t_R
+    #print "I'm ", i, ", tL is ", context.my_t_left
+    #print "I am ", context.myNum, ", my ki is ", context.k_i
     while(1):
         
         if (i == context.members_count-1):
@@ -278,9 +280,9 @@ def sendRound_4():
     # verify nonce's hashes
     for i in range(0, context.members_count):
         hash_check = crypto.hash(c_char_p(context.nonceList[i]), c_int(len(context.nonceList[i])))
-        print i, " hash check ", hash_check
-        print i, " hash original ", context.hashedNonceList[i]
-        print i, " ki check ", context.nonceList[i]
+        #print i, " hash check ", hash_check
+        #print i, " hash original ", context.hashedNonceList[i]
+        #print i, " ki check ", context.nonceList[i]
 
         if hash_check != context.hashedNonceList[i]:
             error = 1
@@ -292,9 +294,7 @@ def sendRound_4():
         T_ver = crypto.xor(c_char_p(T_ver), c_char_p(context.bigTList[i]))
     if T_ver != "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":  ##### MAY BE BAD CONDITION -- THE HASH LENGTH MAY CHANGE
         error = 2;
-  #####      #### DEBUG
-        #purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ "Error -- big T's xsum is not zero")
-    ########
+        purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ "Error -- big T's xsum is not zero")
 
     if error == 0: # Everithing is allright so far
         # Compute session key
@@ -303,19 +303,20 @@ def sendRound_4():
             nonces += context.nonceList[i]
         context.sessionKey = crypto.hash(c_char_p(nonces), c_int(len(nonces)))
         # Compute Session confirmation info
+        #print "Calculating sconf"
         sconf_tmp = ""
         for i in range(0, context.members_count):
             sconf_tmp += context.lPubKeys[i]+","+context.nonceList[i]+","+context.ephPubKeys[i]
         context.sconf = crypto.hash(c_char_p(sconf_tmp), c_int(len(sconf_tmp)))
         # Compute temp key -- c_i
-        c_i_raw = context.sid + context.sconf # Or b64decrypt??
+        c_i_raw = context.sid + context.sconf 
         context.c_i = crypto.hash(c_char_p(c_i_raw), c_int(len(c_i_raw)))
         # Compute auth check info -- d_i
-        context.d_i = crypto.minus(c_char_p(context.r_i), c_char_p(crypto.mult(c_char_p(context.c_i), c_char_p(context.myPrivKey))))
+        #print "Calculating d_i"
+        context.d_i = crypto.minus(c_char_p(context.r_i), c_char_p(crypto.mult(c_char_p(context.c_i), c_char_p(context.myPrivKey), c_char('q'))))
         # sign key with myEphPrivKey
         context.sig = crypto.sign(c_char_p(context.c_i), c_char_p(context.myEphKeys))
-        
-        # Send message 
+        # Sender of the message sended a wrong SID 
         purple.PurpleConvChatSend(chat, "mpOTR:A_R4:"+ context.d_i +";"+ context.sig)
 
 #
@@ -331,17 +332,27 @@ def processRound_4(sender, message):
             context.r_4.recieved +=1
             error = 0
             # verify recieved d_i (mess_splitted[0]) with z_i
+            # print "Check started: exponent 2 to d_i for ", i
             exp_1 = crypto.exponent(c_char_p("2"), c_char_p(mess_splitted[0]))
-            exp_2 = crypto.exponent(c_char_p(context.myPrivKey), c_char_p(context.c_i))
-            d_check = crypto.mult(c_char_p(exp_1), c_char_p(exp_2))
+            # print "Exponent their public key to c_i (h(sid and sconf))"
+            exp_2 = crypto.exponent(c_char_p(context.lPubKeys[i]), c_char_p(context.c_i))
+            d_check = crypto.mult(c_char_p(exp_1), c_char_p(exp_2), c_char('p'))
             if d_check != context.expAuthNonce[i]:
                 print "mpOTR:ERR: Error at verifing auth info from ", sender, " -- bad exponent"
-              #  purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ "Error at verifing auth info -- bad exponent")
+                purple.PurpleConvChatSend(chat, "mpOTR:ERR:Error at verifing auth info -- bad exponent")
                 break
+            #print "d_i is correct!"
             # verify recieved signature (mess_splitted[1]) with author's ephPubKey
+            err = crypto.verifySign(c_char_p(context.c_i), c_char_p(mess_splitted[1]), c_char_p(context.ephPubKeys[i]))
+            if err:
+                print "mpOTR:ERR: Error at verifing signature of c_i from ", sender
+                purple.PurpleConvChatSend(chat, "mpOTR:ERR:Error at verifing signature of c_i")
+                break
+            #print "Signature was verified successfully!"
 
 #
 # Generate and send nonce to chat
+# Additional function for debuging needs
 #
 def sendNonce(chat):
     global crypto
@@ -351,10 +362,12 @@ def sendNonce(chat):
 
 #
 # process reciever nonce
+# Additional function for debuging needs
 #
 def processNonce(sender, nonce):
     global context
-    nonce_raw = base64.b64decode(nonce)
+    nonce_raw = nonce
+    #nonce_raw = base64.b64decode(nonce)
     ## get list of buddies and find sender's number
     for i in range(0, context.members_count):
         if context.usernameList[i] == sender:
@@ -369,7 +382,7 @@ def processNonce(sender, nonce):
 #        print base64.b64encode(sid_raw), len(sid_raw)
         # hash it to get SID
         sid = crypto.hash(c_char_p(sid_raw), c_int(len(sid_raw)))
-        print "This Session's ID is ", base64.b64encode(sid)
+        print "This Session's ID is ", sid
 
 
 ####################### Main Main program #############################
@@ -392,10 +405,13 @@ crypto.exponent.restype = c_char_p #return type
 crypto.xor.restype = c_char_p #return type
 crypto.minus.restype = c_char_p
 crypto.sign.restype = c_char_p
+crypto.verifySign.restype = c_int
 crypto.mult.restype = c_char_p
 
 ###!!!!!!!!!#
-crypto.findq()
+#crypto.findq()
+#crypto.expCheck()
+#crypto.round4Check()
 
 # Add receivedMessage signal handler
 bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.PurpleInterface", signal_name="ReceivedChatMsg")
