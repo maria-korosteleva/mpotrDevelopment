@@ -295,11 +295,13 @@ def sendRound_4():
         purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ "Error -- big T's xsum is not zero")
 
     if error == 0: # Everithing is allright so far
+        
         # Compute session key
         nonces = ""
         for i in range(0, context.members_count):
             nonces += context.nonceList[i]
         context.sessionKey = crypto.hash(c_char_p(nonces), c_int(len(nonces)))
+        
         # Compute Session confirmation info
         #print "Calculating sconf"
         sconf_tmp = ""
@@ -315,7 +317,12 @@ def sendRound_4():
         # sign key with myEphPrivKey
         context.sig = crypto.sign(c_char_p(context.c_i), c_char_p(context.myEphKeys))
         # Sender of the message sended a wrong SID 
+
         purple.PurpleConvChatSend(chat, "mpOTR:A_R4:"+ context.d_i +";"+ context.sig)
+
+        # Test encryption 
+        #res = crypto.encrypt(c_char_p("Hello"), c_char_p(context.sessionKey))
+        #print "Testing encryption ", res`
 
 #
 # Process recieved Round 4 message
@@ -402,15 +409,17 @@ crypto.getPubPrivKey.restype = c_char_p #return type
 crypto.exponent.restype = c_char_p #return type
 crypto.xor.restype = c_char_p #return type
 crypto.minus.restype = c_char_p
+crypto.mult.restype = c_char_p
 crypto.sign.restype = c_char_p
 crypto.verifySign.restype = c_int
-crypto.mult.restype = c_char_p
+crypto.encrypt.restype = c_char_p
 
 ###!!!!!!!!!#
 #crypto.findq()
 #crypto.expCheck()
 #crypto.round4Check()
 ##crypto.pk_example()
+crypto.enc_example()
 
 # Add receivedMessage signal handler
 bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.PurpleInterface", signal_name="ReceivedChatMsg")

@@ -44,8 +44,9 @@ unsigned char* getPubPrivKey(const char* b64_keys, const char* type);
 unsigned char* xor (const unsigned char* left_64, const unsigned char* right_64);
 unsigned char* minus(const unsigned char* first_64, const unsigned char* second_64);
 unsigned char* mult(const unsigned char* first_64, const unsigned char* second_64, char state);
-unsigned char* sign(const unsigned char* info, const unsigned char* key_64);
-int verifySign(const unsigned char* info, const unsigned char* sign_64, const unsigned char* pubKey_64);
+unsigned char* sign(const unsigned char*, const unsigned char*);
+int verifySign(const unsigned char*, const unsigned char* sign_64, const unsigned char* pubKey_64);
+unsigned char* encrypt(const unsigned char*, const unsigned char* key_64);
 // Additional functions
 void myprint(void);
 void expCheck();
@@ -55,6 +56,10 @@ void findq(void);
 void myprint()
 {
     printf("hello world\n");
+}
+
+void enc_example()
+{
 }
 
 int pk_example() {
@@ -280,6 +285,68 @@ void findq()
 */
 }
 
+// info is expexted to be a valid c-string with strlen(info) working correctly
+unsigned char* encrypt(const unsigned char* info, const unsigned char* key_64)
+{
+    /*int keyLen;
+    unsigned char* key = unbase64(key_64, strlen(key_64), &keyLen);
+
+
+    gcry_sexp_t key_s;
+    int err = gcry_sexp_new (&key_s, key, keyLen, 0);
+    if (err) {
+        printf("gcrypt: failed to convert key to s-expression while signing\n");
+        printf ("Failure: %s/%s\n",
+                    gcry_strsource (err),
+                    gcry_strerror (err));
+    }
+    // prepare data
+    gcry_sexp_t data;
+    err = gcry_sexp_build(&data, NULL, "(data (flags) (value \"%s\"))\n", info_64);
+    if (err) {
+        printf("gcrypt: failed to convert data info\n");
+        printf ("Failure: %s/%s\n",
+                    gcry_strsource (err),
+                    gcry_strerror (err));
+    }
+
+    gcry_sexp_t priv_key = gcry_sexp_find_token(key_s, "private-key", 0);
+    if (priv_key == NULL) 
+    {
+        printf("Finding private key in keypair failed while verifying\n");
+    }
+    // sign
+    gcry_sexp_t signature;
+    err = gcry_pk_sign (&signature, data, priv_key);
+    if (err) {
+        printf("gcrypt: failed to sign\n");
+        printf ("Failure: %s/%s\n",
+                    gcry_strsource (err),
+                    gcry_strerror (err));
+    }
+    
+    // to string
+    int len = gcry_sexp_sprint(signature, GCRYSEXP_FMT_DEFAULT, NULL, 0);
+    unsigned char* result = (unsigned char*) malloc ((len) * sizeof(char));
+    int length = gcry_sexp_sprint(signature, GCRYSEXP_FMT_DEFAULT, result, len);
+    if (length != len-1) {
+        printf("Error: smth is wrong with sprint while verifying, len is %d, length is %d\n", len, length);
+    }
+    // finish
+    int res_len = 0;
+    unsigned char* res_64 = base64(result, len, &res_len);
+
+    gcry_sexp_release(signature);
+    gcry_sexp_release(key_s);
+    gcry_sexp_release(priv_key);
+    gcry_sexp_release(data);
+    free(result);
+    free(key);
+    return res_64;
+    */
+    return NULL;
+}
+
 // returns 0 if ok, otherwise returns non-zero (-1)
 // input is expected to be base64 encoded
 int verifySign(const unsigned char* info_64, const unsigned char* sign_64, const unsigned char* pubKey_64)
@@ -331,6 +398,7 @@ int verifySign(const unsigned char* info_64, const unsigned char* sign_64, const
     free(sign);
     return 0;
 }
+
 unsigned char* sign(const unsigned char* info_64, const unsigned char* key_64)
 {
     int keyLen;
@@ -777,19 +845,14 @@ unsigned char* getSomeNonce(int length)
 }
 
 
-unsigned char* hash(const unsigned char* str, int length)
+unsigned char* hash(const unsigned char* str, int str_length)
 {
-    // int strLen = 0;
-    // unsigned char* str = unbase64(str_64, strlen(str_64), &keysLen);
-    int hash_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256);
-    //printf("SHA256 length is %d\n", hash_len);
+    int hash_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256); // 32 bytes = 256 bit
     unsigned char* digest = (unsigned char*) gcry_malloc(hash_len+1);
     digest[hash_len] = '\0';
-    gcry_md_hash_buffer(GCRY_MD_SHA256, digest, str, length);
-    //printf("SHA256 digest is %s\nLegth is %lu\n", digest, strlen(digest));
+    gcry_md_hash_buffer(GCRY_MD_SHA256, digest, str, str_length);
     int res_len = 0;
     unsigned char* digest_64 = base64(digest, hash_len+1, &res_len);
-    //printf("base64 digest is %s\nLegth is %lu\n", digest_64, strlen(digest_64));
     free(digest);
     return digest_64;
 }
