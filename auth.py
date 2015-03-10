@@ -13,9 +13,7 @@ class mpOTRContext:
     usernameList = []
     hashedNonceList = []
     lPubKeys = []
-    lPubKeysLen = []
     ephPubKeys = []
-    ephPubKeysLen = []
     sid = ""
     expAuthNonce = []
     xoredNonceList = []
@@ -44,9 +42,7 @@ class mpOTRContext:
             self.expAuthNonce.append("")
             self.hashedNonceList.append("")
             self.lPubKeys.append("")
-            self.lPubKeysLen.append(0)
             self.ephPubKeys.append("")
-            self.ephPubKeysLen.append(0)
             self.usernameList.append(purple.PurpleConvChatCbGetName(user))
         self.usernameList.sort()
 
@@ -131,7 +127,11 @@ def sendRound_1():
     # Generate/Read from file Ephemeral keys
     #context.myEphKeys = crypto.generateKeys()
     file = open(join(split(__file__)[0],"ephkey"+context.myUsername+".txt"), 'r')
-    context.myEphKeys = file.read()
+    context.myEphKeys = file.read() # this is a keypair -- public and private keys
+
+    # for signing with private key only Run this in the morning, please!
+    #context.myEphKeys = crypto.getPubPrivKey(c_char_p(context.myEphKeys), c_char_p("private-key"))
+    
     #file.write(context.myEphKeys)
     file.close()
     #context.myEphPubKey = crypto.getPubPrivKey(c_char_p(context.myEphKeys), c_char_p("public-key"))
@@ -157,9 +157,7 @@ def processRound_1(sender, message):
             ## add to list using this number
             context.hashedNonceList[i] = mess_splitted[0]
             context.lPubKeys[i] = mess_splitted[1]
-            # context.lPubKeysLen[i] = int(mess_splitted[2])
             context.ephPubKeys[i] = mess_splitted[2]
-            # context.ephPubKeysLen[i] = int(mess_splitted[4])
             context.r_1.recieved +=1
 
 
@@ -412,6 +410,7 @@ crypto.mult.restype = c_char_p
 #crypto.findq()
 #crypto.expCheck()
 #crypto.round4Check()
+##crypto.pk_example()
 
 # Add receivedMessage signal handler
 bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.PurpleInterface", signal_name="ReceivedChatMsg")

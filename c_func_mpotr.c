@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "b64.h"
 #include <gcrypt.h>
+#include <assert.h>
 
 // Some constants -- predefined prime numbers used in the protocol for modulo operations
 
@@ -54,6 +55,42 @@ void findq(void);
 void myprint()
 {
     printf("hello world\n");
+}
+
+int pk_example() {
+   static const char message[] = "hello";
+   gcry_sexp_t gen_parms, sign_parms, keypair, pubkey, skey, sig;
+   size_t errof=0;
+   int rc;
+
+   gcry_control (GCRYCTL_DISABLE_SECMEM, 0);
+   /* shortest key I could find */
+  // gcry_error_t err = gcry_sexp_build (&param, NULL, "(genkey (rsa (nbits 3:256)))");
+   rc = gcry_sexp_build (&gen_parms, &errof, "(genkey (rsa (nbits 3:256)))");
+   //assert(rc == 0);
+   printf("Start key generation...\n");
+   rc = gcry_pk_genkey(&keypair, gen_parms);
+   assert(rc == 0);
+
+   skey = gcry_sexp_find_token(keypair, "private-key", 0);
+   pubkey = gcry_sexp_find_token(keypair, "public-key", 0);
+   assert(skey != NULL);
+   assert(pubkey != NULL);
+
+   rc = gcry_sexp_build (&sign_parms, &errof,
+                         "(data (flags) (value \"%s\"))\n", message);
+   assert(rc == 0);
+
+   rc = gcry_pk_sign (&sig, sign_parms, skey);
+   assert(rc == 0);
+   gcry_sexp_dump(sig);
+
+   rc = gcry_pk_verify (sig, sign_parms, pubkey);
+   if(rc != 0) {
+     printf("verify returns error %d: %s\n", rc, gcry_strerror(rc));
+   }
+   printf("Example finished\n");
+   //exit(EXIT_SUCCESS);
 }
 
 // Check Auth part of the IDSKE proto
@@ -244,14 +281,16 @@ void findq()
 }
 
 // returns 0 if ok, otherwise returns non-zero (-1)
-int verifySign(const unsigned char* info, const unsigned char* sign_64, const unsigned char* pubKey_64)
+// input is expected to be base64 encoded
+int verifySign(const unsigned char* info_64, const unsigned char* sign_64, const unsigned char* pubKey_64)
 {
+    //printf("Signature in verify is %s\n", sign_64);
     int pubKeyLen, sigLen;
     unsigned char* pubKey = unbase64(pubKey_64, strlen(pubKey_64), &pubKeyLen);
     unsigned char* sign = unbase64(sign_64, strlen(sign_64), &sigLen);
-    // 
-    gcry_sexp_t key_s, sign_s;
-    int err = gcry_sexp_new (&key_s, pubKey, pubKeyLen, 0);
+    
+    gcry_sexp_t pub_key_s, sign_s;
+    int err = gcry_sexp_new (&pub_key_s, pubKey, pubKeyLen, 0);
     if (err) {
         printf("gcrypt: failed to convert pubKey to s-expression while verifying signature\n");
         printf ("Failure: %s/%s\n",
@@ -267,19 +306,7 @@ int verifySign(const unsigned char* info, const unsigned char* sign_64, const un
     }
     // prepare data
     gcry_sexp_t data;
-    unsigned char* info_h_64 = hash(info, strlen(info)); // we hope that info is a valid c-string
-    int infoLen;
-    unsigned char* info_hashed = unbase64(info_h_64, strlen(info_h_64), &infoLen);
-    gcry_mpi_t info_mpi;
-    size_t info_mpi_len;
-    err = gcry_mpi_scan(&info_mpi, GCRYMPI_FMT_USG, info_hashed, infoLen-1, &info_mpi_len);
-    if (err) {
-        printf("gcrypt: failed to scan mpi from info while signing\n");
-        printf ("Failure: %s/%s\n",
-                    gcry_strsource (err),
-                    gcry_strerror (err));
-    }
-    err = gcry_sexp_build(&data, NULL, "%m", info_mpi);
+    err = gcry_sexp_build(&data, NULL, "(data (flags) (value \"%s\"))\n", info_64);
     if (err) {
         printf("gcrypt: failed to convert data info\n");
         printf ("Failure: %s/%s\n",
@@ -288,36 +315,26 @@ int verifySign(const unsigned char* info, const unsigned char* sign_64, const un
     }
     
     // verify signature
-    err = gcry_pk_verify(sign_s, data, key_s);
-    // finalizing 
-    gcry_sexp_release(sign_s);
-    gcry_sexp_release(key_s);
-    gcry_sexp_release(data);
-    gcry_mpi_release(info_mpi);
-    free(pubKey);
-    free(sign);
-    free(info_h_64);
-    free(info_hashed);
+    err = gcry_pk_verify(sign_s, data, pub_key_s);
     if (err) {
-    	// signature is not valid
         //printf("gcrypt: failed to sign\n");
         printf ("Failure: %s/%s\n",
                     gcry_strsource (err),
                     gcry_strerror (err));
         return -1;
-        //int len = gcry_sexp_sprint(data, GCRYSEXP_FMT_DEFAULT, NULL, 0);
-        //unsigned char* tmp = (unsigned char*) malloc ((len) * sizeof(char));
-        //int length = gcry_sexp_sprint(data, GCRYSEXP_FMT_DEFAULT, tmp, len);
-        //tmp[length] = '\0';
-        //printf("Data S-exp is \n %s \nInfoLen is %lu\nInfo64Len = %lu\n", tmp, strlen(info_hashed), strlen(info_h_64));
     }
+    // finalizing 
+    gcry_sexp_release(sign_s);
+    gcry_sexp_release(pub_key_s);
+    gcry_sexp_release(data);
+    free(pubKey);
+    free(sign);
     return 0;
 }
-unsigned char* sign(const unsigned char* info, const unsigned char* key_64)
+unsigned char* sign(const unsigned char* info_64, const unsigned char* key_64)
 {
     int keyLen;
     unsigned char* key = unbase64(key_64, strlen(key_64), &keyLen);
-    // 
     gcry_sexp_t key_s;
     int err = gcry_sexp_new (&key_s, key, keyLen, 0);
     if (err) {
@@ -328,57 +345,46 @@ unsigned char* sign(const unsigned char* info, const unsigned char* key_64)
     }
     // prepare data
     gcry_sexp_t data;
-    unsigned char* info_h_64 = hash(info, strlen(info)); // we hope that info is a valid c-string
-    int infoLen;
-    unsigned char* info_hashed = unbase64(info_h_64, strlen(info_h_64), &infoLen);
-    gcry_mpi_t info_mpi;
-    size_t info_mpi_len;
-    err = gcry_mpi_scan(&info_mpi, GCRYMPI_FMT_USG, info_hashed, infoLen-1, &info_mpi_len);
-    if (err) {
-        printf("gcrypt: failed to scan mpi from info while signing\n");
-        printf ("Failure: %s/%s\n",
-                    gcry_strsource (err),
-                    gcry_strerror (err));
-    }
-    err = gcry_sexp_build(&data, NULL, "%m", info_mpi);
+    err = gcry_sexp_build(&data, NULL, "(data (flags) (value \"%s\"))\n", info_64);
     if (err) {
         printf("gcrypt: failed to convert data info\n");
         printf ("Failure: %s/%s\n",
                     gcry_strsource (err),
                     gcry_strerror (err));
     }
-    
+
+    gcry_sexp_t priv_key = gcry_sexp_find_token(key_s, "private-key", 0);
+    if (priv_key == NULL) 
+    {
+        printf("Finding private key in keypair failed while verifying\n");
+    }
     // sign
     gcry_sexp_t signature;
-    err = gcry_pk_sign (&signature, data, key_s);
+    err = gcry_pk_sign (&signature, data, priv_key);
     if (err) {
         printf("gcrypt: failed to sign\n");
         printf ("Failure: %s/%s\n",
                     gcry_strsource (err),
                     gcry_strerror (err));
-        //int len = gcry_sexp_sprint(data, GCRYSEXP_FMT_DEFAULT, NULL, 0);
-        //unsigned char* tmp = (unsigned char*) malloc ((len) * sizeof(char));
-        //int length = gcry_sexp_sprint(data, GCRYSEXP_FMT_DEFAULT, tmp, len);
-        //tmp[length] = '\0';
-        //printf("Data S-exp is \n %s \nInfoLen is %lu\nInfo64Len = %lu\n", tmp, strlen(info_hashed), strlen(info_h_64));
     }
+    
     // to string
     int len = gcry_sexp_sprint(signature, GCRYSEXP_FMT_DEFAULT, NULL, 0);
     unsigned char* result = (unsigned char*) malloc ((len) * sizeof(char));
     int length = gcry_sexp_sprint(signature, GCRYSEXP_FMT_DEFAULT, result, len);
-    result[length] = '\0';
-    
+    if (length != len-1) {
+        printf("Error: smth is wrong with sprint while verifying, len is %d, length is %d\n", len, length);
+    }
     // finish
     int res_len = 0;
     unsigned char* res_64 = base64(result, len, &res_len);
+
     gcry_sexp_release(signature);
     gcry_sexp_release(key_s);
+    gcry_sexp_release(priv_key);
     gcry_sexp_release(data);
-    gcry_mpi_release(info_mpi);
     free(result);
     free(key);
-    free(info_h_64);
-    free(info_hashed);
     return res_64;
 }
 
