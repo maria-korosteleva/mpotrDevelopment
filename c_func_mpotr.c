@@ -4,8 +4,12 @@
 #include <gcrypt.h>
 #include <assert.h>
 
-// Some constants -- predefined prime numbers used in the protocol for modulo operations
+// Crypto parameters
+#define GCRY_CIPHER GCRY_CIPHER_AES256   // Pick the cipher type here
+#define GCRY_MODE GCRY_CIPHER_MODE_ECB // Pick the cipher mode here (we are using block cipher)
+#define GCRY_HASH GCRY_MD_SHA256 // Hash length should equal cipher type's key length
 
+// Some constants -- predefined prime numbers used in the protocol for modulo operations
 //const int p_len = 2;
 //const int q_len = 1;
 const int p_len = 192;
@@ -47,6 +51,7 @@ unsigned char* mult(const unsigned char* first_64, const unsigned char* second_6
 unsigned char* sign(const unsigned char*, const unsigned char*);
 int verifySign(const unsigned char*, const unsigned char* sign_64, const unsigned char* pubKey_64);
 unsigned char* encrypt(const unsigned char*, const unsigned char* key_64);
+unsigned char* decrypt(const unsigned char* info_enc, const unsigned char* key_64);
 // Additional functions
 void myprint(void);
 void expCheck();
@@ -60,6 +65,32 @@ void myprint()
 
 void enc_example()
 {
+    gcry_cipher_hd_t handle;
+    size_t keyLength = gcry_cipher_get_algo_keylen(GCRY_CIPHER);
+    char txtBuffer [] ="123456789 abcdefghijklmnopqrstuvwzyz ABCDEFGHIJKLMNOPQRSTUVWZYZ";
+    size_t txtLength = strlen(txtBuffer) + 1; // string plus termination (final zero)
+    char * encBuffer = (char *)malloc(txtLength);
+    char * outBuffer = (char *)malloc(txtLength);
+
+    printf("Txtlen is %lu\n", txtLength);
+
+    char * key = "one test AES keyone test AES key"; // 16 bytes
+    gcry_cipher_open(&handle, GCRY_CIPHER, GCRY_MODE, 0);
+
+    gcry_cipher_setkey(handle, key, keyLength);
+
+    gcry_cipher_encrypt(handle, encBuffer, txtLength, txtBuffer, txtLength);
+    gcry_cipher_decrypt(handle, outBuffer, txtLength, encBuffer, txtLength);
+    
+    size_t index;
+    printf("encBuffer = ");
+    for (index = 0; index<txtLength; index++)
+        printf("%c", encBuffer[index]);
+    printf("\n");
+    printf("outBuffer = %s\n", outBuffer);
+    gcry_cipher_close(handle);
+    free(encBuffer);
+    free(outBuffer);
 }
 
 int pk_example() {
@@ -285,66 +316,109 @@ void findq()
 */
 }
 
+// Decrypted info is expexted to be a valid c-string without '\0' symbols in the middle
+unsigned char* decrypt(const unsigned char* info_enc_64, const unsigned char* key_64)
+{
+    int infoLength; 
+    unsigned char* info_enc = unbase64(info_enc_64, strlen(info_enc_64), &infoLength);
+    int keyLen;
+    unsigned char* key = unbase64(key_64, strlen(key_64), &keyLen);
+    if (keyLen != gcry_cipher_get_algo_keylen(GCRY_CIPHER))
+    {
+        printf("Error: key length (%d) in not compatible with the cipher mode (%lu)\n", keyLen, gcry_cipher_get_algo_keylen(GCRY_CIPHER));
+    }
+    size_t keyLength = gcry_cipher_get_algo_keylen(GCRY_CIPHER);
+    
+    // init cipher
+    gcry_cipher_hd_t ciph_handle;
+    gcry_cipher_open(&ciph_handle, GCRY_CIPHER, GCRY_MODE, 0);
+    //gcry_cipher_setkey(ciph_handle, key, keyLen);
+    gcry_cipher_setkey(ciph_handle, key, keyLength);
+    
+    unsigned char* result = (unsigned char*) malloc (infoLength+1);
+    result[infoLength] = '\0';
+    int err = gcry_cipher_decrypt(ciph_handle, result, infoLength, info_enc, infoLength);
+    if (err) {
+        printf("gcrypt: failed to decrypt while encrypting\n");
+        printf ("Failure: %s/%s\n",
+                    gcry_strsource (err),
+                    gcry_strerror (err));
+    }
+    //printf("outBuffer = %s\n", result);
+    
+    // finalize
+    gcry_cipher_close(ciph_handle);
+    
+    /*int res_len = 0;
+    // we can just use srtlen(result) because padding consists of '\0's
+    unsigned char* res_64 = base64(result, strlen(result), &res_len);
+    free(result);*/
+    return result;
+}
+
 // info is expexted to be a valid c-string with strlen(info) working correctly
 unsigned char* encrypt(const unsigned char* info, const unsigned char* key_64)
 {
-    /*int keyLen;
+    int keyLen;
     unsigned char* key = unbase64(key_64, strlen(key_64), &keyLen);
-
-
-    gcry_sexp_t key_s;
-    int err = gcry_sexp_new (&key_s, key, keyLen, 0);
-    if (err) {
-        printf("gcrypt: failed to convert key to s-expression while signing\n");
-        printf ("Failure: %s/%s\n",
-                    gcry_strsource (err),
-                    gcry_strerror (err));
-    }
-    // prepare data
-    gcry_sexp_t data;
-    err = gcry_sexp_build(&data, NULL, "(data (flags) (value \"%s\"))\n", info_64);
-    if (err) {
-        printf("gcrypt: failed to convert data info\n");
-        printf ("Failure: %s/%s\n",
-                    gcry_strsource (err),
-                    gcry_strerror (err));
-    }
-
-    gcry_sexp_t priv_key = gcry_sexp_find_token(key_s, "private-key", 0);
-    if (priv_key == NULL) 
+    if (keyLen != gcry_cipher_get_algo_keylen(GCRY_CIPHER))
     {
-        printf("Finding private key in keypair failed while verifying\n");
+        printf("Error: key length (%d) in not compatible with the cipher mode (%lu)\n", keyLen, gcry_cipher_get_algo_keylen(GCRY_CIPHER));
     }
-    // sign
-    gcry_sexp_t signature;
-    err = gcry_pk_sign (&signature, data, priv_key);
-    if (err) {
-        printf("gcrypt: failed to sign\n");
-        printf ("Failure: %s/%s\n",
-                    gcry_strsource (err),
-                    gcry_strerror (err));
+    size_t keyLength = gcry_cipher_get_algo_keylen(GCRY_CIPHER);
+    size_t infoLength = strlen(info); // string plus termination (final zero)
+    
+    // init cipher
+    gcry_cipher_hd_t ciph_handle;
+    gcry_cipher_open(&ciph_handle, GCRY_CIPHER, GCRY_MODE, 0);
+    gcry_cipher_setkey(ciph_handle, key, keyLength);
+    
+    unsigned char* result;
+    //printf("Info is %s of length %lu\n", info, strlen(info));
+    if (infoLength % keyLength == 0)
+    {
+    	// Just encrypt
+        result = (unsigned char*) malloc (infoLength);
+        int err = gcry_cipher_encrypt(ciph_handle, result, infoLength, info, infoLength);
+        if (err) {
+            printf("gcrypt: failed to encrypt info while encrypting\n");
+            printf ("Failure: %s/%s\n",
+                        gcry_strsource (err),
+                        gcry_strerror (err));
+        }
+    }
+    else 
+    {
+        // Modify length 
+	int diff = keyLength - strlen(info) % keyLength;
+	infoLength += diff;
+	unsigned char* tmp = (unsigned char*) malloc (infoLength);
+	memcpy(tmp, info, infoLength-diff);
+	int i;
+	for (i = infoLength-diff; i < infoLength; i++)
+	{
+	    tmp[i] = '\0'; // putting zeros as padding
+	}
+	// encrypt
+        result = (unsigned char*) malloc (infoLength);
+        int err = gcry_cipher_encrypt(ciph_handle, result, infoLength, info, infoLength);
+        if (err) {
+            printf("gcrypt: failed to encrypt info while encrypting with bad length\n");
+            printf ("Failure: %s/%s\n",
+                        gcry_strsource (err),
+                        gcry_strerror (err));
+        }
+	// Clean the area
+	free(tmp);
     }
     
-    // to string
-    int len = gcry_sexp_sprint(signature, GCRYSEXP_FMT_DEFAULT, NULL, 0);
-    unsigned char* result = (unsigned char*) malloc ((len) * sizeof(char));
-    int length = gcry_sexp_sprint(signature, GCRYSEXP_FMT_DEFAULT, result, len);
-    if (length != len-1) {
-        printf("Error: smth is wrong with sprint while verifying, len is %d, length is %d\n", len, length);
-    }
-    // finish
+    // finalize
+    gcry_cipher_close(ciph_handle);
     int res_len = 0;
-    unsigned char* res_64 = base64(result, len, &res_len);
-
-    gcry_sexp_release(signature);
-    gcry_sexp_release(key_s);
-    gcry_sexp_release(priv_key);
-    gcry_sexp_release(data);
+    unsigned char* res_64 = base64(result, infoLength, &res_len);
     free(result);
-    free(key);
     return res_64;
-    */
-    return NULL;
+
 }
 
 // returns 0 if ok, otherwise returns non-zero (-1)
@@ -847,12 +921,12 @@ unsigned char* getSomeNonce(int length)
 
 unsigned char* hash(const unsigned char* str, int str_length)
 {
-    int hash_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256); // 32 bytes = 256 bit
+    int hash_len = gcry_md_get_algo_dlen(GCRY_HASH); // 32 bytes = 256 bit
     unsigned char* digest = (unsigned char*) gcry_malloc(hash_len+1);
     digest[hash_len] = '\0';
     gcry_md_hash_buffer(GCRY_MD_SHA256, digest, str, str_length);
     int res_len = 0;
-    unsigned char* digest_64 = base64(digest, hash_len+1, &res_len);
+    unsigned char* digest_64 = base64(digest, hash_len, &res_len);
     free(digest);
     return digest_64;
 }

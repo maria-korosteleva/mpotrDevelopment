@@ -5,12 +5,17 @@
 class Round:
     sended = 0
     recieved = 0
+class Communicate:
+    messNum = 0 # Number of text messages sended to the chat
 
 
 class mpOTRContext:
     # chat
     init_mess_count = 0   # initialisation -- Channel Establishment
     usernameList = []
+    # AKE info 
+    len_sid_random = 13
+    len_authNonce_random = 0 # Means that the random number will be modulo prime number q 
     hashedNonceList = []
     lPubKeys = []
     ephPubKeys = []
@@ -27,6 +32,8 @@ class mpOTRContext:
     r_2 = Round()
     r_3 = Round()
     r_4 = Round()
+    # Comm phase info
+    comm = Communicate()
     # and so
     def __init__(self, chat):
         self.chat = chat
@@ -47,12 +54,6 @@ class mpOTRContext:
         self.usernameList.sort()
 
 ################################ Functions #################################
-
-### Soon we won't need these two any more, I hope
-len_sid_random = 13
-len_authNonce_random = 0 # May be we should make it larger, 
-                         # but then we need to do something
-                         # with module at the exponent function in crypto 
 
 #
 # Handle Recieved message -- big switch
@@ -106,9 +107,57 @@ def receivedMessage(account, sender, message, conversation, flags):
                 if (context.r_4.recieved == context.members_count): 
                 # Round finished
                     print "Success! IDSKE finished!"
+                    sendOneTextMess()
+            elif (mess_splitted[1] == "TEXT"):
+                processText(sender, mess_splitted[2])
             elif (mess_splitted[1] == "ERR"):
                 print "mpOTR ERROR: ", mess_splitted[2]
         
+
+############## Communication phase #####################
+#
+# Send some message to the chat
+#
+def sendOneTextMess():
+    global context
+    if context.comm.messNum == 0:
+        sendEncOldBlueMess("Hi1!")
+    elif context.com.messNum == 1:
+        sendEncOldBlueMess("Hi2!")
+    context.comm.messNum += 1
+
+#
+# Pack the message and send it 
+#
+def sendEncOldBlueMess(message):
+    global context, crypto    
+    msgEnc = crypto.encrypt(c_char_p(message), c_char_p(context.sessionKey))
+    sign = crypto.sign(c_char_p(msgEnc), c_char_p(context.myEphKeys))
+    #print "Testing encryption ", res
+    purple.PurpleConvChatSend(chat, "mpOTR:TEXT:" + msgEnc + ";" + sign)
+    #res = crypto.decrypt(c_char_p(res), c_char_p(context.sessionKey))
+    #print "Testing decryption ", res
+
+#
+# Process recieved Text (Communication phase) message
+#
+def processText(sender, message):
+    global context
+    print sender, "said:", message  
+    # Split the message
+    #mess_splitted = message.split(";", 2)
+    # Add to buffers
+    ## get list of buddies and find sender's number
+    #for i in range(0, context.members_count):
+    #    if context.usernameList[i] == sender:
+    #        ## add to list using this number
+    #        context.hashedNonceList[i] = mess_splitted[0]
+    #        context.lPubKeys[i] = mess_splitted[1]
+    #        context.ephPubKeys[i] = mess_splitted[2]
+    #        context.r_1.recieved +=1
+
+
+
 ############### Authentication Round 1 processing ####
 #
 # Generate keys and send message to chat
@@ -116,12 +165,12 @@ def receivedMessage(account, sender, message, conversation, flags):
 def sendRound_1():
     global context, crypto
     # generate nonce for session key
-    context.k_i = crypto.getSomeNonce(c_int(len_sid_random))
+    context.k_i = crypto.getSomeNonce(c_int(context.len_sid_random))
     k_i_hashed = crypto.hash(c_char_p(context.k_i), c_int(len(context.k_i)))
     
     # Generate Long-term keys
     ### like this: *Well, this may not be exactly long-term key. Whatever.*
-    context.myPrivKey = crypto.getSomeNonce(c_int(len_authNonce_random))
+    context.myPrivKey = crypto.getSomeNonce(c_int(context.len_authNonce_random))
     context.myPubKey = crypto.exponent(c_char_p("2"), c_char_p(context.myPrivKey))
     
     # Generate/Read from file Ephemeral keys
@@ -175,7 +224,7 @@ def sendRound_2():
     # hash it to get SID
     context.sid = crypto.hash(c_char_p(sid_raw), c_int(len(sid_raw))) # is the length ok? #FIX
     # generate auth nonce
-    context.r_i = crypto.getSomeNonce(c_int(len_authNonce_random))
+    context.r_i = crypto.getSomeNonce(c_int(context.len_authNonce_random))
     # get exponent of auth nonce
     #print "Get exponent of auth nonce"
     context.exp_r_i = crypto.exponent( c_char_p("2"), c_char_p(context.r_i))
@@ -290,9 +339,9 @@ def sendRound_4():
     T_ver = context.bigTList[0]
     for i in range(1, context.members_count):
         T_ver = crypto.xor(c_char_p(T_ver), c_char_p(context.bigTList[i]))
-    if T_ver != "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":  ##### MAY BE BAD CONDITION -- THE HASH LENGTH MAY CHANGE
+    if T_ver != "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=":  ##### MAY BE BAD CONDITION -- THE HASH LENGTH MAY CHANGE
         error = 2;
-        purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ "Error -- big T's xsum is not zero")
+        purple.PurpleConvChatSend(chat, "mpOTR:ERR:"+ "Error -- big T's xsum is not zero, it is " + T_ver)
 
     if error == 0: # Everithing is allright so far
         
@@ -319,10 +368,6 @@ def sendRound_4():
         # Sender of the message sended a wrong SID 
 
         purple.PurpleConvChatSend(chat, "mpOTR:A_R4:"+ context.d_i +";"+ context.sig)
-
-        # Test encryption 
-        #res = crypto.encrypt(c_char_p("Hello"), c_char_p(context.sessionKey))
-        #print "Testing encryption ", res`
 
 #
 # Process recieved Round 4 message
@@ -360,8 +405,8 @@ def processRound_4(sender, message):
 # Additional function for debuging needs
 #
 def sendNonce(chat):
-    global crypto
-    nonce_raw = crypto.getSomeNonce(c_int(len_sid_random))
+    global context, crypto
+    nonce_raw = crypto.getSomeNonce(c_int(context.len_sid_random))
     nonce_enc = nonce_raw
     purple.PurpleConvChatSend(chat, "mpOTR:SID:"+nonce_enc)
 
@@ -413,13 +458,14 @@ crypto.mult.restype = c_char_p
 crypto.sign.restype = c_char_p
 crypto.verifySign.restype = c_int
 crypto.encrypt.restype = c_char_p
+crypto.decrypt.restype = c_char_p
 
 ###!!!!!!!!!#
 #crypto.findq()
 #crypto.expCheck()
 #crypto.round4Check()
-##crypto.pk_example()
-crypto.enc_example()
+#crypto.pk_example()
+#crypto.enc_example()
 
 # Add receivedMessage signal handler
 bus.add_signal_receiver(receivedMessage, dbus_interface="im.pidgin.purple.PurpleInterface", signal_name="ReceivedChatMsg")
