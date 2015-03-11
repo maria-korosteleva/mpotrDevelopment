@@ -106,7 +106,7 @@ def receivedMessage(account, sender, message, conversation, flags):
                     context.r_4.sended = 1
                 if (context.r_4.recieved == context.members_count): 
                 # Round finished
-                    print "Success! IDSKE finished!"
+                    print "IDSKE finished successfully"
                     sendOneTextMess()
             elif (mess_splitted[1] == "TEXT"):
                 processText(sender, mess_splitted[2])
@@ -122,40 +122,48 @@ def sendOneTextMess():
     global context
     if context.comm.messNum == 0:
         sendEncOldBlueMess("Hi1!")
-    elif context.com.messNum == 1:
-        sendEncOldBlueMess("Hi2!")
+    elif context.comm.messNum == 1:
+        sendEncOldBlueMess("hi2!")
+    elif context.comm.messNum == 2:
+        sendEncOldBlueMess("hi3!")
+    elif context.comm.messNum == 3:
+        sendEncOldBlueMess("hi4!")
+    elif context.comm.messNum == 4:
+        sendEncOldBlueMess("hi5!")
+    elif context.comm.messNum == 5:
+        sendEncOldBlueMess("hi6!")
     context.comm.messNum += 1
 
 #
 # Pack the message and send it 
 #
 def sendEncOldBlueMess(message):
-    global context, crypto    
+    global context, crypto   
+    ## Do not forget to add Session ID to the message
     msgEnc = crypto.encrypt(c_char_p(message), c_char_p(context.sessionKey))
     sign = crypto.sign(c_char_p(msgEnc), c_char_p(context.myEphKeys))
-    #print "Testing encryption ", res
     purple.PurpleConvChatSend(chat, "mpOTR:TEXT:" + msgEnc + ";" + sign)
-    #res = crypto.decrypt(c_char_p(res), c_char_p(context.sessionKey))
-    #print "Testing decryption ", res
 
 #
 # Process recieved Text (Communication phase) message
 #
 def processText(sender, message):
-    global context
-    print sender, "said:", message  
-    # Split the message
-    #mess_splitted = message.split(";", 2)
-    # Add to buffers
-    ## get list of buddies and find sender's number
-    #for i in range(0, context.members_count):
-    #    if context.usernameList[i] == sender:
-    #        ## add to list using this number
-    #        context.hashedNonceList[i] = mess_splitted[0]
-    #        context.lPubKeys[i] = mess_splitted[1]
-    #        context.ephPubKeys[i] = mess_splitted[2]
-    #        context.r_1.recieved +=1
-
+    global context, crypto
+    mess_splitted = message.split(";", 2)
+    # Verify the signature
+    for i in range(0, context.members_count):
+        if context.usernameList[i] == sender:
+            err = crypto.verifySign(c_char_p(mess_splitted[0]), c_char_p(mess_splitted[1]), c_char_p(context.ephPubKeys[i]))
+            if (err):
+                #purple.PurpleConvChatSend(chat, "mpOTR:ERR:Error at verifing signature from "+sender)
+                print "mpOTR:ERR:Error at verifing signature from ", sender
+                break
+    
+    # sign is Ok, decrypt
+    msgDec = crypto.decrypt(c_char_p(mess_splitted[0]), c_char_p(context.sessionKey))
+    print sender, "said:", msgDec 
+    time.sleep(5)
+    sendOneTextMess()
 
 
 ############### Authentication Round 1 processing ####
@@ -178,9 +186,6 @@ def sendRound_1():
     file = open(join(split(__file__)[0],"ephkey"+context.myUsername+".txt"), 'r')
     context.myEphKeys = file.read() # this is a keypair -- public and private keys
 
-    # for signing with private key only Run this in the morning, please!
-    #context.myEphKeys = crypto.getPubPrivKey(c_char_p(context.myEphKeys), c_char_p("private-key"))
-    
     #file.write(context.myEphKeys)
     file.close()
     #context.myEphPubKey = crypto.getPubPrivKey(c_char_p(context.myEphKeys), c_char_p("public-key"))
@@ -188,7 +193,6 @@ def sendRound_1():
     context.myEphPubKey = file.read()
     #file.write(context.myEphPubKey)
     file.close()
-    
     # Send message 
     purple.PurpleConvChatSend(chat, "mpOTR:A_R1:"+k_i_hashed+";"+ context.myPubKey+";"+context.myEphPubKey)
 
@@ -200,7 +204,6 @@ def processRound_1(sender, message):
     # Split the message
     mess_splitted = message.split(";", 2)
     # Add to buffers
-    ## get list of buddies and find sender's number
     for i in range(0, context.members_count):
         if context.usernameList[i] == sender:
             ## add to list using this number
@@ -438,7 +441,7 @@ def processNonce(sender, nonce):
 ####################### Main Main program #############################
 
 # Import libraries
-import dbus, gobject, ctypes
+import dbus, gobject, ctypes, time
 import base64
 from ctypes import * 
 from dbus.mainloop.glib import DBusGMainLoop
