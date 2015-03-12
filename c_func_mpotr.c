@@ -498,7 +498,7 @@ unsigned char* sign(const unsigned char* info_64, const unsigned char* key_64)
     gcry_sexp_t priv_key = gcry_sexp_find_token(key_s, "private-key", 0);
     if (priv_key == NULL) 
     {
-        printf("Finding private key in keypair failed while verifying\n");
+        printf("Finding private key in keypair failed while signing\n");
     }
     // sign
     gcry_sexp_t signature;
@@ -515,7 +515,7 @@ unsigned char* sign(const unsigned char* info_64, const unsigned char* key_64)
     unsigned char* result = (unsigned char*) malloc ((len) * sizeof(char));
     int length = gcry_sexp_sprint(signature, GCRYSEXP_FMT_DEFAULT, result, len);
     if (length != len-1) {
-        printf("Error: smth is wrong with sprint while verifying, len is %d, length is %d\n", len, length);
+        printf("Error: smth is wrong with sprint while signing, len is %d, length is %d\n", len, length);
     }
     // finish
     int res_len = 0;
