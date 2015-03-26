@@ -328,7 +328,7 @@ def processRequestLostMsg(sender, message):
     # verify signature
     for i in range(0, context.members_count):
         if context.usernameList[i] == sender:
-            err = crypto.verifySign(c_char_p("mpOTR:LostMsgReq" + mess_splitted[0] + ";"), c_char_p(mess_splitted[1]), c_char_p(context.ephPubKeys[i]))
+            err = crypto.verifySign(c_char_p("mpOTR:LostMsgReq:" + mess_splitted[0] + ";"), c_char_p(mess_splitted[1]), c_char_p(context.ephPubKeys[i]))
             if (err != 0):
                 purple.PurpleConvChatSend(context.chat, "mpOTR:ERR:Error LostMsgRequestProcessing: at verifing signature from "+sender)
                 return
