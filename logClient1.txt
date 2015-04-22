@@ -1,0 +1,30 @@
+1 mpotrclient1@qip.ru/
+2 mpotrclient2@qip.ru/
+3 mpotrclient3@qip.ru/
+Choose the account (number): 
+Your account is  mpotrclient1@qip.ru/
+3  members in chat are online
+My Number is  0
+IDSKE finished successfully
+mpotrclient1  said: Hi1!
+mpotrclient2  said: Hi1!
+mpotrclient3  said: Hi1!
+mpotrclient1  said: hi2!
+mpotrclient3  said: hi2!
+mpotrclient3  said: hi3!
+mpotrclient1  said: hi3!
+mpotrclient1  said: hi4!
+mpotrclient3  said: hi4!
+mpotrclient1  said: hi5!
+mpotrclient3  said: hi5!
+mpotrclient1  said: hi6!
+mpotrclient3  said: hi6!
+mpotrclient2  said: hi2!
+mpotrclient2  said: hi3!
+mpotrclient2  said: hi4!
+mpotrclient2  said: hi5!
+mpotrclient2  said: hi6!
+mpotrclient1 's ephemeral keypair is: KDg6a2V5LWRhdGEKICgxMDpwdWJsaWMta2V5CiAgKDM6cnNhCiAgICgxOm4zMzoAqpf4pTk/pLSujwnLeiEsGJc/TR9xySz7y1N/cHXsTwkpCiAgICgxOmUzOgEAASkKICAgKQogICkKICgxMTpwcml2YXRlLWtleQogICgzOnJzYQogICAoMTpuMzM6AKqX+KU5P6S0ro8Jy3ohLBiXP00fccks+8tTf3B17E8JKQogICAoMTplMzoBAAEpCiAgICgxOmQzMjoWtRbkS0wE7QYFRS0ACzVWsstayP3os86Takfjlxm6BykKICAgKDE6cDE3OgDAQ+SyK4kDox9oscXjeN6fKQogICAoMTpxMTc6AOMk+WaT7IEctgu4fzaw+VcpCiAgICgxOnUxNjo8UqrifIkxqaDwUY2AEVVpKQogICApCiAgKQogKQoA
+mpotrclient2 's ephemeral keypair is: KDg6a2V5LWRhdGEKICgxMDpwdWJsaWMta2V5CiAgKDM6cnNhCiAgICgxOm4zMzoAoAHiVq8sf1VIUc+c2yu6jNx501vDZINelPKUPTSNPSEpCiAgICgxOmUzOgEAASkKICAgKQogICkKICgxMTpwcml2YXRlLWtleQogICgzOnJzYQogICAoMTpuMzM6AKAB4lavLH9VSFHPnNsruozcedNbw2SDXpTylD00jT0hKQogICAoMTplMzoBAAEpCiAgICgxOmQzMjoMBPg2oMQL8KEVHC5hPGCv87QEy2eDNgIXpmA5m2uMQSkKICAgKDE6cDE3OgDBjb/bTv5rV4sHcxICzNi5KQogICAoMTpxMTc6ANOhbdtwrLxi49RcFicIA6kpCiAgICgxOnUxNjpt+uWBeatdF0UeSBHQEl7mKQogICApCiAgKQogKQoA
+mpotrclient3 's ephemeral keypair is: KDg6a2V5LWRhdGEKICgxMDpwdWJsaWMta2V5CiAgKDM6cnNhCiAgICgxOm4zMzoAwbje9OKNShdf/Y1xtyeN2gdvoplanDmIa2H2I6a4bB0pCiAgICgxOmUzOgEAASkKICAgKQogICkKICgxMTpwcml2YXRlLWtleQogICgzOnJzYQogICAoMTpuMzM6AMG43vTijUoXX/2NcbcnjdoHb6KZWpw5iGth9iOmuGwdKQogICAoMTplMzoBAAEpCiAgICgxOmQzMjoElOjBBfKtg+wDRSshV9AlA1uR9z0YfHsfARmxvuN5CSkKICAgKDE6cDE3OgDH5KL0vVN8Q9fC5+F+SXm7KQogICAoMTpxMTc6APgY0Zg3lxiAczaO8csUyAcpCiAgICgxOnUxNzoAjXI7NpsMPLwHr28ZsCPHhSkKICAgKQogICkKICkKAA==
+Your conversation is finished (properly)

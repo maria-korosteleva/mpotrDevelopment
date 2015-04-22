@@ -484,7 +484,7 @@ def processText(sender, message):
     for i in range(4, count-1):
         tmp += mess_splitted[i] + ";"  # Careful! It ends with empty piece
     checkLostedParents(tmp) # check parents
-    #print "Recieved ", mess_splitted[2], " from ", mess_splitted[0]
+    #print "Recieved ", mess_splitted[2], " from ", mess_splitted[0], " with id ", mess_splitted[3]
     #print "recieved message with id ", mess_splitted[3], "with  parents ", tmp
     origSender = mess_splitted[0]
     context.comm.undelivered.append(MsgRecord(origSender, mess_splitted[3], tmp,  mess_splitted[2], "mpOTR:TEXT:" + message))
