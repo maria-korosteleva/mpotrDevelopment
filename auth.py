@@ -25,6 +25,7 @@ class Communicate:
 class mpOTRContext:
     # chat
     usernameList = []
+    recieved = 0 # Total messages recieved
     # Initiation info
     init_mess_count = 0   # initialisation -- Channel Establishment
     # AKE info 
@@ -82,6 +83,7 @@ class mpOTRContext:
 def receivedMessage(account, sender, message, conversation, flags):
     global context
     if conversation == purple.PurpleConvChatGetConversation(context.chat):
+        context.recieved += 1
         #print sender, "said:", message # Commented for DEBUGing purpose 
         mess_splitted = message.split(":", 2)
         if (len(mess_splitted) == 3) and (mess_splitted[0] == "mpOTR"):
@@ -164,6 +166,7 @@ def receivedMessage(account, sender, message, conversation, flags):
                 if (context.keyPair.recieved == context.members_count): 
                     # Shutdown is finished
                     print "Your conversation is finished (properly)"
+                    print "Messages recieved: ", context.recieved
             elif (mess_splitted[1] == "ERR"):
                 print "mpOTR ERROR: ", mess_splitted[2]
         
